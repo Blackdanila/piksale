@@ -1,6 +1,7 @@
 import { layout } from "../layout.js";
 import { prisma } from "../../db/prisma.js";
 import { locationIndicatorCompact, getLocationInfo } from "../components/location-indicator.js";
+import { getHeaderStats } from "../stats.js";
 
 const PAGE_SIZE = 24;
 
@@ -87,6 +88,7 @@ export async function blocksPage(
 
   const paginationHtml = buildPagination(page, totalPages, locationId);
 
+  const stats = await getHeaderStats();
   return layout(
     title,
     `
@@ -121,6 +123,8 @@ export async function blocksPage(
       }
     </script>
   `,
+    "",
+    stats,
   );
 }
 

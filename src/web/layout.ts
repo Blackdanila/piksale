@@ -1,4 +1,22 @@
-export function layout(title: string, body: string, head = ""): string {
+export interface HeaderStats {
+  locations: number;
+  blocks: number;
+  flats: number;
+  updatedAt: string;
+}
+
+export function layout(title: string, body: string, head = "", stats?: HeaderStats): string {
+  const statsBar = stats ? `
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:6px 0;font-size:12px;color:var(--text-3)">
+    <div class="container" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between">
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <span>${stats.locations} городов</span>
+        <span>${stats.blocks} ЖК</span>
+        <span>${stats.flats.toLocaleString("ru-RU")} квартир</span>
+      </div>
+      <span>Обновлено: ${stats.updatedAt}</span>
+    </div>
+  </div>` : "";
   return `<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -100,8 +118,6 @@ export function layout(title: string, body: string, head = ""): string {
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      position: sticky;
-      top: 60px;
       background: var(--surface);
     }
     tr:hover td { background: var(--surface-2); }
@@ -280,6 +296,7 @@ export function layout(title: string, body: string, head = ""): string {
   ${head}
 </head>
 <body>
+  ${statsBar}
   <header>
     <div class="container header-inner">
       <a href="/" class="logo">PIK<span>sale</span></a>
@@ -287,6 +304,7 @@ export function layout(title: string, body: string, head = ""): string {
         <a href="/">Главная</a>
         <a href="/blocks">ЖК</a>
         <a href="/dynamics">Динамика</a>
+        <a href="https://t.me/piksale_bot" target="_blank" style="color:var(--accent)">TG-бот</a>
       </nav>
     </div>
   </header>

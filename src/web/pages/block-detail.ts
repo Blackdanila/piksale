@@ -1,6 +1,7 @@
 import { layout } from "../layout.js";
 import { prisma } from "../../db/prisma.js";
 import { locationIndicator } from "../components/location-indicator.js";
+import { getHeaderStats } from "../stats.js";
 
 const PAGE_SIZE = 50;
 
@@ -16,7 +17,8 @@ export async function blockDetailPage(
   });
 
   if (!block) {
-    return layout("Не найдено", `<div class="empty"><div class="empty-icon">🔍</div>ЖК не найден</div>`);
+    const stats = await getHeaderStats();
+    return layout("Не найдено", `<div class="empty"><div class="empty-icon">🔍</div>ЖК не найден</div>`, "", stats);
   }
 
   const where: Record<string, unknown> = { blockId, status: "free" };
@@ -30,7 +32,7 @@ export async function blockDetailPage(
   else if (sortBy === "floor_asc") orderBy.floor = "asc";
   else orderBy.currentPrice = "asc";
 
-  const [flats, total, stats, roomCounts, totalAllFlats, soldFlats] = await Promise.all([
+  const [flats, total, priceStats, roomCounts, totalAllFlats, soldFlats] = await Promise.all([
     prisma.flat.findMany({
       where,
       orderBy,
@@ -56,6 +58,10 @@ export async function blockDetailPage(
   ]);
 
   const soldPercent = totalAllFlats > 0 ? ((soldFlats / totalAllFlats) * 100).toFixed(1) : "0";
+
+  const minPrice = priceStats._min.currentPrice;
+  const maxPrice = priceStats._max.currentPrice;
+  const avgMeter = priceStats._avg.meterPrice;
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const buildUrl = (params: Record<string, string | number | undefined>) => {
@@ -122,12 +128,9 @@ export async function blockDetailPage(
     })
     .join("");
 
-  const minPrice = stats._min.currentPrice;
-  const maxPrice = stats._max.currentPrice;
-  const avgMeter = stats._avg.meterPrice;
-
   const paginationHtml = buildDetailPagination(page, totalPages, blockId, rooms, sortBy);
 
+  const stats = await getHeaderStats();
   return layout(
     block.name,
     `
@@ -149,7 +152,7 @@ export async function blockDetailPage(
 
     <div class="stats" style="margin-top:20px">
       <div class="stat">
-        <div class="stat-value">${stats._count}</div>
+        <div class="stat-value">${priceStats._count}</div>
         <div class="stat-label">Квартир</div>
       </div>
       <div class="stat">
@@ -212,6 +215,8 @@ export async function blockDetailPage(
       }
     </script>
   `,
+    "",
+    stats,
   );
 }
 

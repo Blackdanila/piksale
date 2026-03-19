@@ -1,5 +1,6 @@
 import { layout } from "../layout.js";
 import { prisma } from "../../db/prisma.js";
+import { getHeaderStats } from "../stats.js";
 
 export async function flatDetailPage(flatId: number): Promise<string> {
   const flat = await prisma.flat.findUnique({
@@ -8,7 +9,8 @@ export async function flatDetailPage(flatId: number): Promise<string> {
   });
 
   if (!flat) {
-    return layout("Не найдено", `<div class="empty"><div class="empty-icon">🔍</div>Квартира не найдена</div>`);
+    const stats = await getHeaderStats();
+    return layout("Не найдено", `<div class="empty"><div class="empty-icon">🔍</div>Квартира не найдена</div>`, "", stats);
   }
 
   const history = await prisma.priceSnapshot.findMany({
@@ -63,6 +65,7 @@ export async function flatDetailPage(flatId: number): Promise<string> {
     trendHtml = `<span class="${cls}" style="font-size:16px;font-weight:600">${sign}${pct}% за всё время</span>`;
   }
 
+  const stats = await getHeaderStats();
   return layout(
     `${roomLabel} · ${flat.block.name}`,
     `
@@ -127,5 +130,7 @@ export async function flatDetailPage(flatId: number): Promise<string> {
         : '<div class="empty" style="margin-top:24px"><div class="empty-icon">📊</div>История цен пока недоступна</div>'
     }
   `,
+    "",
+    stats,
   );
 }

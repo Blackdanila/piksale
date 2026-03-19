@@ -1,5 +1,6 @@
 import { layout } from "../layout.js";
 import { prisma } from "../../db/prisma.js";
+import { getHeaderStats } from "../stats.js";
 
 export async function homePage(): Promise<string> {
   const [locationCount, blockCount, flatCount] = await Promise.all([
@@ -22,6 +23,8 @@ export async function homePage(): Promise<string> {
       </a>`,
     )
     .join("");
+
+  const stats = await getHeaderStats();
 
   return layout(
     "Мониторинг цен ПИК",
@@ -55,5 +58,7 @@ export async function homePage(): Promise<string> {
       ${locationCards || '<div class="empty"><div class="empty-icon">📭</div>Данные ещё не загружены</div>'}
     </div>
   `,
+    "",
+    stats,
   );
 }

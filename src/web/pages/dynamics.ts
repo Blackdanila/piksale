@@ -1,6 +1,7 @@
 import { layout } from "../layout.js";
 import { prisma } from "../../db/prisma.js";
 import type { BlockDailyStats } from "@prisma/client";
+import { getHeaderStats } from "../stats.js";
 
 export async function dynamicsPage(
   blockId?: number,
@@ -16,7 +17,8 @@ export async function dynamicsPage(
   });
 
   if (!block) {
-    return layout("Не найдено", `<div class="empty"><div class="empty-icon">🔍</div>ЖК не найден</div>`);
+    const stats = await getHeaderStats();
+    return layout("Не найдено", `<div class="empty"><div class="empty-icon">🔍</div>ЖК не найден</div>`, "", stats);
   }
 
   const since = new Date();
@@ -163,6 +165,7 @@ export async function dynamicsPage(
     })
     .join("");
 
+  const stats = await getHeaderStats();
   return layout(
     `Динамика · ${block.name}`,
     `
@@ -209,6 +212,8 @@ export async function dynamicsPage(
     ${roomsHtml}
     ${floorHtml}
   `,
+    "",
+    stats,
   );
 }
 
@@ -241,6 +246,7 @@ async function dynamicsPickerPage(): Promise<string> {
     })
     .join("");
 
+  const stats = await getHeaderStats();
   return layout(
     "Динамика цен",
     `
@@ -248,5 +254,7 @@ async function dynamicsPickerPage(): Promise<string> {
     <p class="page-subtitle">Выберите ЖК для просмотра</p>
     ${sections || '<div class="empty"><div class="empty-icon">📭</div>Данные ещё не загружены</div>'}
   `,
+    "",
+    stats,
   );
 }
