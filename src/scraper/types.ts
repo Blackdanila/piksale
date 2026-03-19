@@ -8,7 +8,7 @@ export interface PikLocation {
 export interface PikBlock {
   id: number;
   name: string;
-  slug: string;
+  slug: string | null;
   location_id: number;
   address?: string;
   image?: string;
