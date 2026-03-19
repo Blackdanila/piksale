@@ -69,18 +69,21 @@ export async function blocksPage(
         : "";
 
       return `
-      <a href="/blocks/${block.id}" class="card" style="text-decoration:none;color:inherit">
-        <div style="display:flex;align-items:start;justify-content:space-between;gap:8px">
-          <div>
-            <div style="font-size:16px;font-weight:600">${block.name}</div>
-            <div style="color:var(--text-3);font-size:13px;margin-top:2px">${block.location.name}</div>
+      <a href="/blocks/${block.id}" class="card" style="text-decoration:none;color:inherit;padding:0;overflow:hidden">
+        ${block.imgUrl ? `<img src="${block.imgUrl}" alt="${block.name}" style="width:100%;height:140px;object-fit:cover;display:block" loading="lazy">` : `<div style="width:100%;height:140px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:32px">🏗</div>`}
+        <div style="padding:14px 16px">
+          <div style="display:flex;align-items:start;justify-content:space-between;gap:8px">
+            <div>
+              <div style="font-size:16px;font-weight:600">${block.name}</div>
+              <div style="color:var(--text-3);font-size:13px;margin-top:2px">${block.location.name}</div>
+            </div>
+            ${locBadge}
           </div>
-          ${locBadge}
-        </div>
-        ${block.address ? `<div style="color:var(--text-3);font-size:12px;margin-top:4px">${block.address}</div>` : ""}
-        <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-          <span style="font-weight:600;font-size:14px">${priceStr}</span>
-          <span style="color:var(--text-3);font-size:13px">${freeCount} кв.</span>
+          ${block.address ? `<div style="color:var(--text-3);font-size:12px;margin-top:4px">${block.address}</div>` : ""}
+          <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <span style="font-weight:600;font-size:14px">${priceStr}</span>
+            <span style="color:var(--text-3);font-size:13px">${freeCount} кв.</span>
+          </div>
         </div>
       </a>`;
     })
