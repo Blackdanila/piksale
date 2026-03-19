@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Location {
+  id     Int     @id
+  name   String
+  slug   String  @unique
+  blocks Block[]
+}
+
+model Block {
+  id            Int            @id
+  name          String
+  slug          String         @unique
+  locationId    Int
+  location      Location       @relation(fields: [locationId], references: [id])
+  address       String?
+  imgUrl        String?
+  lat           Float?
+  lng           Float?
+  flats         Flat[]
+  subscriptions Subscription[]
+  dailyStats    BlockDailyStats[]
+}
+
+model Flat {
+  id           Int             @id
+  blockId      Int
+  block        Block           @relation(fields: [blockId], references: [id])
+  bulkId       Int?
+  bulkName     String?
+  number       String?
+  rooms        Int
+  area         Float
+  floor        Int
+  status       String
+  currentPrice Int
+  meterPrice   Int
+  url          String?
+  updatedAt    DateTime        @updatedAt
+  snapshots    PriceSnapshot[]
+
+  @@index([blockId])
+  @@index([rooms])
+  @@index([status])
+}
+
+model PriceSnapshot {
+  id         Int      @id @default(autoincrement())
+  flatId     Int
+  flat       Flat     @relation(fields: [flatId], references: [id])
+  price      Int
+  meterPrice Int
+  date       DateTime @default(now())
+
+  @@index([flatId, date])
+}
+
+model BlockDailyStats {
+  id              Int      @id @default(autoincrement())
+  blockId         Int
+  block           Block    @relation(fields: [blockId], references: [id])
+  date            DateTime @db.Date
+
+  // Общие
+  totalFlats      Int      // всего квартир в продаже
+  avgPrice        Int      // средняя цена
+  medianPrice     Int      // медианная цена
+  minPrice        Int
+  maxPrice        Int
+  avgMeterPrice   Int      // средняя цена за м²
+  medianMeterPrice Int     // медианная цена за м²
+  minMeterPrice   Int
+  maxMeterPrice   Int
+
+  // По комнатности
+  countStudio     Int      @default(0)
+  countR1         Int      @default(0)
+  countR2         Int      @default(0)
+  countR3         Int      @default(0)
+  countR4plus     Int      @default(0)
+  avgPriceStudio  Int?
+  avgPriceR1      Int?
+  avgPriceR2      Int?
+  avgPriceR3      Int?
+  avgPriceR4plus  Int?
+
+  // Премия за этаж
+  avgMeterPriceLow   Int?  // этажи 1-5
+  avgMeterPriceMid   Int?  // этажи 6-15
+  avgMeterPriceHigh  Int?  // этажи 16+
+
+  // Распроданность
+  totalFlatsAll   Int      @default(0)  // все квартиры (free + reserved + sold)
+  soldCount       Int      @default(0)
+  reservedCount   Int      @default(0)
+  soldPercent     Float    @default(0)  // % проданных от общего
+
+  @@unique([blockId, date])
+  @@index([blockId, date])
+}
+
+model Subscription {
+  id        Int      @id @default(autoincrement())
+  chatId    BigInt
+  blockId   Int
+  block     Block    @relation(fields: [blockId], references: [id])
+  rooms     Int?
+  createdAt DateTime @default(now())
+
+  @@unique([chatId, blockId, rooms])
+}

@@ -1,0 +1,187 @@
+import { prisma } from "../db/prisma.js";
+import { fetchLocations, fetchBlocks, fetchFlats } from "./client.js";
+import { computeAllDailyStats } from "./aggregator.js";
+import type { PikFlat } from "./types.js";
+
+interface PriceChange {
+  flatId: number;
+  blockId: number;
+  oldPrice: number;
+  newPrice: number;
+  rooms: number | null;
+}
+
+export async function syncLocations() {
+  console.log("Syncing locations...");
+  const locations = await fetchLocations();
+
+  for (const loc of locations) {
+    await prisma.location.upsert({
+      where: { id: loc.id },
+      update: { name: loc.name, slug: loc.slug },
+      create: { id: loc.id, name: loc.name, slug: loc.slug },
+    });
+  }
+
+  console.log(`Synced ${locations.length} locations`);
+}
+
+export async function syncBlocks() {
+  console.log("Syncing blocks...");
+  const blocks = await fetchBlocks();
+
+  let count = 0;
+  for (const block of blocks) {
+    // Ensure location exists
+    const location = await prisma.location.findUnique({
+      where: { id: block.location_id },
+    });
+    if (!location) continue;
+
+    const lat = block.latitude ?? block.lat ?? null;
+    const lng = block.longitude ?? block.lng ?? null;
+
+    await prisma.block.upsert({
+      where: { id: block.id },
+      update: {
+        name: block.name,
+        slug: block.slug,
+        address: block.address ?? null,
+        imgUrl: block.image ?? null,
+        lat,
+        lng,
+      },
+      create: {
+        id: block.id,
+        name: block.name,
+        slug: block.slug,
+        locationId: block.location_id,
+        address: block.address ?? null,
+        imgUrl: block.image ?? null,
+        lat,
+        lng,
+      },
+    });
+    count++;
+  }
+
+  console.log(`Synced ${count} blocks`);
+}
+
+export async function syncFlatsForBlock(blockId: number): Promise<PriceChange[]> {
+  const changes: PriceChange[] = [];
+
+  let rawFlats: PikFlat[];
+  try {
+    rawFlats = await fetchFlats(blockId);
+  } catch (err) {
+    console.error(`Failed to fetch flats for block ${blockId}:`, err);
+    return changes;
+  }
+
+  if (!Array.isArray(rawFlats) || rawFlats.length === 0) return changes;
+
+  for (const raw of rawFlats) {
+    if (!raw.id || !raw.price) continue;
+
+    const existing = await prisma.flat.findUnique({
+      where: { id: raw.id },
+    });
+
+    const flatData = {
+      blockId: raw.block_id ?? blockId,
+      bulkId: raw.bulk_id ?? null,
+      bulkName: raw.bulk_name ?? null,
+      number: raw.number ?? null,
+      rooms: raw.rooms ?? 0,
+      area: raw.area ?? 0,
+      floor: raw.floor ?? 0,
+      status: raw.status ?? "free",
+      currentPrice: raw.price,
+      meterPrice: raw.meter_price ?? 0,
+      url: raw.url ?? null,
+    };
+
+    await prisma.flat.upsert({
+      where: { id: raw.id },
+      update: flatData,
+      create: { id: raw.id, ...flatData },
+    });
+
+    // Record price snapshot if price changed or first time
+    const shouldSnapshot =
+      !existing || existing.currentPrice !== raw.price;
+
+    if (shouldSnapshot) {
+      await prisma.priceSnapshot.create({
+        data: {
+          flatId: raw.id,
+          price: raw.price,
+          meterPrice: raw.meter_price ?? 0,
+        },
+      });
+
+      if (existing && existing.currentPrice !== raw.price) {
+        changes.push({
+          flatId: raw.id,
+          blockId,
+          oldPrice: existing.currentPrice,
+          newPrice: raw.price,
+          rooms: raw.rooms ?? null,
+        });
+      }
+    }
+  }
+
+  return changes;
+}
+
+export async function collectAll(): Promise<PriceChange[]> {
+  console.log("Starting full data collection...");
+  const startTime = Date.now();
+
+  await syncLocations();
+  await syncBlocks();
+
+  const blocks = await prisma.block.findMany({ select: { id: true, name: true } });
+  console.log(`Collecting flats for ${blocks.length} blocks...`);
+
+  const allChanges: PriceChange[] = [];
+  let processed = 0;
+
+  for (const block of blocks) {
+    const changes = await syncFlatsForBlock(block.id);
+    allChanges.push(...changes);
+    processed++;
+
+    if (processed % 50 === 0) {
+      console.log(`Progress: ${processed}/${blocks.length} blocks`);
+    }
+
+    // Rate limiting: small delay between requests
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  // Compute daily aggregates after all flats are synced
+  await computeAllDailyStats();
+
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  console.log(
+    `Collection complete in ${elapsed}s. ${processed} blocks, ${allChanges.length} price changes`,
+  );
+
+  return allChanges;
+}
+
+// Allow running standalone
+if (process.argv[1]?.endsWith("collector.ts") || process.argv[1]?.endsWith("collector.js")) {
+  collectAll()
+    .then((changes) => {
+      console.log(`Done. ${changes.length} price changes detected.`);
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Collection failed:", err);
+      process.exit(1);
+    });
+}
