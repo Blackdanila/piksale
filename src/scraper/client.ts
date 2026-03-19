@@ -85,9 +85,16 @@ export async function fetchBlockImageFromPage(pikPath: string): Promise<string |
     });
     if (!res.ok) return null;
     const html = await res.text();
-    // Look for db-estate CDN images (block renders)
-    const match = html.match(/https:\/\/\d+\.db-estate\.cdn\.pik-service\.ru\/block\/[^"]+\.(jpg|png|webp)/);
-    return match ? match[0] : null;
+    // Try db-estate CDN first (high-res renders)
+    const match1 = html.match(/https:\/\/\d+\.db-estate\.cdn\.pik-service\.ru\/block\/[^"\s]+\.(jpg|png|webp)/);
+    if (match1) return match1[0];
+    // Then try cdn.pik.ru slider images
+    const match2 = html.match(/https:\/\/cdn\.pik\.ru\/content\/slider\/[^"\s]+\.(jpg|png|webp)/);
+    if (match2) return match2[0];
+    // Any content CDN image
+    const match3 = html.match(/https:\/\/content\.cdn\.pik-service\.ru\/[^"\s]+\.(jpg|png|webp)/);
+    if (match3) return match3[0];
+    return null;
   } catch {
     return null;
   }
