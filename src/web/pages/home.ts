@@ -1,4 +1,5 @@
 import { layout } from "../layout.js";
+import type { SeoMeta } from "../layout.js";
 import { prisma } from "../../db/prisma.js";
 import { getHeaderStats } from "../stats.js";
 
@@ -51,6 +52,12 @@ export async function homePage(): Promise<string> {
 
   const stats = await getHeaderStats();
 
+  const seo: SeoMeta = {
+    description: "Мониторинг и аналитика цен на квартиры от застройщика ПИК. Динамика цен, сравнение ЖК, история изменений.",
+    keywords: "ПИК, квартиры, цены, новостройки, мониторинг цен, динамика цен, застройщик",
+    canonical: "https://piksale.ru/",
+  };
+
   return layout(
     "Мониторинг цен ПИК",
     `
@@ -70,5 +77,6 @@ export async function homePage(): Promise<string> {
   `,
     "",
     stats,
+    seo,
   );
 }

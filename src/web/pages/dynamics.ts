@@ -1,4 +1,5 @@
 import { layout } from "../layout.js";
+import type { SeoMeta } from "../layout.js";
 import { prisma } from "../../db/prisma.js";
 import type { BlockDailyStats } from "@prisma/client";
 import { getHeaderStats } from "../stats.js";
@@ -166,6 +167,13 @@ export async function dynamicsPage(
     .join("");
 
   const stats = await getHeaderStats();
+
+  const seo: SeoMeta = {
+    description: `Динамика цен ЖК ${block.name}. История изменения цен на квартиры ПИК.`,
+    keywords: `${block.name}, ПИК, динамика цен, аналитика, история цен, квартиры`,
+    canonical: `https://piksale.ru/dynamics?block=${blockId}`,
+  };
+
   return layout(
     `Динамика · ${block.name}`,
     `
@@ -214,6 +222,7 @@ export async function dynamicsPage(
   `,
     "",
     stats,
+    seo,
   );
 }
 
@@ -247,6 +256,13 @@ async function dynamicsPickerPage(): Promise<string> {
     .join("");
 
   const stats = await getHeaderStats();
+
+  const seo: SeoMeta = {
+    description: "Динамика цен на квартиры ПИК. Аналитика и история изменений по всем ЖК.",
+    keywords: "ПИК, динамика цен, аналитика, история цен, квартиры, новостройки",
+    canonical: "https://piksale.ru/dynamics",
+  };
+
   return layout(
     "Динамика цен",
     `
@@ -256,5 +272,6 @@ async function dynamicsPickerPage(): Promise<string> {
   `,
     "",
     stats,
+    seo,
   );
 }

@@ -1,4 +1,5 @@
 import { layout } from "../layout.js";
+import type { SeoMeta } from "../layout.js";
 import { prisma } from "../../db/prisma.js";
 import { getHeaderStats } from "../stats.js";
 
@@ -67,6 +68,14 @@ export async function flatDetailPage(flatId: number): Promise<string> {
   }
 
   const stats = await getHeaderStats();
+
+  const seo: SeoMeta = {
+    description: `${roomLabel} квартира ${flat.area}м² в ЖК ${flat.block.name}, ${flat.block.location.name}. ${flat.floor} этаж. Цена ${flat.currentPrice.toLocaleString("ru-RU")} ₽.`,
+    keywords: `${flat.block.name}, ${roomLabel}, квартира, ПИК, ${flat.block.location.name}, планировка`,
+    ogImage: flat.planRender ?? flat.block.imgUrl ?? undefined,
+    canonical: `https://piksale.ru/flats/${flatId}`,
+  };
+
   return layout(
     `${roomLabel} · ${flat.block.name}`,
     `
@@ -169,5 +178,6 @@ export async function flatDetailPage(flatId: number): Promise<string> {
   `,
     "",
     stats,
+    seo,
   );
 }

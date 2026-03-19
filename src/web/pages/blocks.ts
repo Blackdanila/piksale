@@ -1,4 +1,5 @@
 import { layout } from "../layout.js";
+import type { SeoMeta } from "../layout.js";
 import { prisma } from "../../db/prisma.js";
 import { locationIndicatorCompact, getLocationInfo } from "../components/location-indicator.js";
 import { getHeaderStats } from "../stats.js";
@@ -94,6 +95,25 @@ export async function blocksPage(
   const paginationHtml = buildPagination(page, totalPages, locationId);
 
   const stats = await getHeaderStats();
+
+  const minPriceAll = blockMinPrices.reduce((min, p) => {
+    if (p.minPrice && (min === null || p.minPrice < min)) return p.minPrice;
+    return min;
+  }, null as number | null);
+  const minPriceStr = minPriceAll ? `${(minPriceAll / 1_000_000).toFixed(1)} млн ₽` : "";
+
+  const seo: SeoMeta = location
+    ? {
+        description: `Жилые комплексы ПИК в ${location.name}. ${minPriceStr ? `Цены от ${minPriceStr}. ` : ""}${total} ЖК в продаже.`,
+        keywords: `ПИК, ${location.name}, квартиры, новостройки, ЖК, цены`,
+        canonical: `https://piksale.ru/blocks?location=${locationId}`,
+      }
+    : {
+        description: "Все жилые комплексы ПИК. Каталог новостроек с ценами и аналитикой.",
+        keywords: "ПИК, жилые комплексы, новостройки, каталог, квартиры, цены",
+        canonical: "https://piksale.ru/blocks",
+      };
+
   return layout(
     title,
     `
@@ -130,6 +150,7 @@ export async function blocksPage(
   `,
     "",
     stats,
+    seo,
   );
 }
 

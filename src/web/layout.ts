@@ -5,7 +5,16 @@ export interface HeaderStats {
   updatedAt: string;
 }
 
-export function layout(title: string, body: string, head = "", stats?: HeaderStats): string {
+export interface SeoMeta {
+  description?: string;
+  keywords?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  canonical?: string;
+}
+
+export function layout(title: string, body: string, head = "", stats?: HeaderStats, seo?: SeoMeta): string {
   const statsBar = stats ? `
   <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:6px 0;font-size:12px;color:var(--text-3)">
     <div class="container" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between">
@@ -23,6 +32,15 @@ export function layout(title: string, body: string, head = "", stats?: HeaderSta
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title} — PIKsale</title>
+  ${seo?.description ? `<meta name="description" content="${seo.description}">` : ""}
+  ${seo?.keywords ? `<meta name="keywords" content="${seo.keywords}">` : ""}
+  ${seo?.canonical ? `<link rel="canonical" href="${seo.canonical}">` : ""}
+  <meta property="og:title" content="${seo?.ogTitle ?? title}">
+  ${seo?.ogDescription ? `<meta property="og:description" content="${seo.ogDescription}">` : ""}
+  ${seo?.ogImage ? `<meta property="og:image" content="${seo.ogImage}">` : ""}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PIKsale">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>

@@ -1,4 +1,5 @@
 import { layout } from "../layout.js";
+import type { SeoMeta } from "../layout.js";
 import { prisma } from "../../db/prisma.js";
 import { locationIndicator } from "../components/location-indicator.js";
 import { getHeaderStats } from "../stats.js";
@@ -131,6 +132,14 @@ export async function blockDetailPage(
   const paginationHtml = buildDetailPagination(page, totalPages, blockId, rooms, sortBy);
 
   const stats = await getHeaderStats();
+
+  const seo: SeoMeta = {
+    description: `${block.name}, ${block.location.name}. ${priceStats._count} квартир${minPrice ? ` от ${minPrice.toLocaleString("ru-RU")} ₽` : ""}. Цены, планировки, динамика.`,
+    keywords: `${block.name}, ПИК, квартиры, ${block.location.name}, новостройка, цены`,
+    ogImage: block.imgUrl ?? undefined,
+    canonical: `https://piksale.ru/blocks/${blockId}`,
+  };
+
   return layout(
     block.name,
     `
@@ -219,6 +228,7 @@ export async function blockDetailPage(
   `,
     "",
     stats,
+    seo,
   );
 }
 
