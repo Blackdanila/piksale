@@ -11,15 +11,23 @@ interface PriceChange {
   rooms: number | null;
 }
 
+function toSlug(name: string, id: number): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-zа-яё0-9]+/gi, "-")
+    .replace(/^-|-$/g, "") || `loc-${id}`;
+}
+
 export async function syncLocations() {
   console.log("Syncing locations...");
   const locations = await fetchLocations();
 
   for (const loc of locations) {
+    const slug = loc.slug || toSlug(loc.name, loc.id);
     await prisma.location.upsert({
       where: { id: loc.id },
-      update: { name: loc.name, slug: loc.slug },
-      create: { id: loc.id, name: loc.name, slug: loc.slug },
+      update: { name: loc.name, slug },
+      create: { id: loc.id, name: loc.name, slug },
     });
   }
 
@@ -40,12 +48,13 @@ export async function syncBlocks() {
 
     const lat = block.latitude ?? block.lat ?? null;
     const lng = block.longitude ?? block.lng ?? null;
+    const blockSlug = block.slug || toSlug(block.name, block.id);
 
     await prisma.block.upsert({
       where: { id: block.id },
       update: {
         name: block.name,
-        slug: block.slug,
+        slug: blockSlug,
         address: block.address ?? null,
         imgUrl: block.image ?? null,
         lat,
@@ -54,7 +63,7 @@ export async function syncBlocks() {
       create: {
         id: block.id,
         name: block.name,
-        slug: block.slug,
+        slug: blockSlug,
         locationId: block.location_id,
         address: block.address ?? null,
         imgUrl: block.image ?? null,
