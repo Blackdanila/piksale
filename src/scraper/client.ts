@@ -42,6 +42,40 @@ export async function fetchBlocks(): Promise<PikBlock[]> {
   });
 }
 
+export async function fetchBlockImages(): Promise<Map<number, string>> {
+  const imageMap = new Map<number, string>();
+
+  // Get all locations first
+  const locations = await fetchLocations();
+
+  for (const loc of locations) {
+    try {
+      const data = await pikFetch<{
+        blocks?: Array<{
+          id: number;
+          image?: {
+            filter?: { desktop?: string; mobile?: string };
+            last?: string;
+          };
+        }>;
+      }>(`/v2/filter?type=1&location=${loc.id}`);
+
+      for (const block of data.blocks ?? []) {
+        const img =
+          block.image?.filter?.desktop ??
+          block.image?.filter?.mobile ??
+          block.image?.last ??
+          null;
+        if (img) imageMap.set(block.id, img);
+      }
+    } catch {
+      // Some locations may not have filter data
+    }
+  }
+
+  return imageMap;
+}
+
 export async function fetchBulks(blockId: number): Promise<PikBulk[]> {
   return pikFetch<PikBulk[]>(`/v1/bulk?block_id=${blockId}&type=1`);
 }

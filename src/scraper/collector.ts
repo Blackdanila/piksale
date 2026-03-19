@@ -1,5 +1,5 @@
 import { prisma } from "../db/prisma.js";
-import { fetchLocations, fetchBlocks, fetchBulks, fetchFlats } from "./client.js";
+import { fetchLocations, fetchBlocks, fetchBlockImages, fetchBulks, fetchFlats } from "./client.js";
 import { computeAllDailyStats } from "./aggregator.js";
 import type { PikFlat } from "./types.js";
 
@@ -36,11 +36,15 @@ export async function syncLocations() {
 
 export async function syncBlocks() {
   console.log("Syncing blocks...");
-  const blocks = await fetchBlocks();
+  const [blocks, imageMap] = await Promise.all([
+    fetchBlocks(),
+    fetchBlockImages(),
+  ]);
+
+  console.log(`Fetched ${blocks.length} blocks, ${imageMap.size} images`);
 
   let count = 0;
   for (const block of blocks) {
-    // Ensure location exists
     const location = await prisma.location.findUnique({
       where: { id: block.location_id },
     });
@@ -49,6 +53,7 @@ export async function syncBlocks() {
     const lat = block.latitude ?? block.lat ?? null;
     const lng = block.longitude ?? block.lng ?? null;
     const blockSlug = block.slug || toSlug(block.name, block.id);
+    const imgUrl = imageMap.get(block.id) ?? block.image ?? null;
 
     await prisma.block.upsert({
       where: { id: block.id },
@@ -56,7 +61,7 @@ export async function syncBlocks() {
         name: block.name,
         slug: blockSlug,
         address: block.address ?? null,
-        imgUrl: block.image ?? null,
+        imgUrl,
         lat,
         lng,
       },
@@ -66,7 +71,7 @@ export async function syncBlocks() {
         slug: blockSlug,
         locationId: block.location_id,
         address: block.address ?? null,
-        imgUrl: block.image ?? null,
+        imgUrl,
         lat,
         lng,
       },

@@ -142,6 +142,8 @@ export async function blockDetailPage(
       <span>${block.name}</span>
     </div>
 
+    ${block.imgUrl ? `<div style="margin:20px 0 0;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)"><img src="${block.imgUrl}" alt="${block.name}" style="width:100%;height:240px;object-fit:cover;display:block" loading="lazy"></div>` : ""}
+
     <h1 class="page-title">${block.name}</h1>
     <p class="page-subtitle">
       ${block.location.name}${block.address ? ` · ${block.address}` : ""}
