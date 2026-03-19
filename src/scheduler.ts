@@ -75,7 +75,8 @@ async function notifySubscribers(bot: Bot<Context>, changes: PriceChange[]) {
             .text("📊 История", `flat:history:${change.flatId}`);
 
           if (flat.url) {
-            kb.url("🔗 pik.ru", `https://www.pik.ru${flat.url}`);
+            const pikUrl = flat.url.startsWith("http") ? flat.url : `https://www.pik.ru${flat.url}`;
+            kb.url("🔗 pik.ru", pikUrl);
           }
 
           await bot.api.sendMessage(Number(sub.chatId), text, {

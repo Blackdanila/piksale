@@ -110,7 +110,7 @@ export async function blockDetailPage(
       const roomLabel = flat.rooms === 0 ? "Студия" : `${flat.rooms}-комн`;
       const price = flat.currentPrice.toLocaleString("ru-RU");
       const meterPrice = flat.meterPrice.toLocaleString("ru-RU");
-      const pikUrl = flat.url ? `https://www.pik.ru${flat.url}` : null;
+      const pikUrl = flat.url?.startsWith("http") ? flat.url : flat.url ? `https://www.pik.ru${flat.url}` : null;
       const linkCell = pikUrl
         ? `<a href="${pikUrl}" target="_blank" rel="noopener" style="font-size:12px">pik.ru →</a>`
         : "";

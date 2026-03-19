@@ -20,7 +20,7 @@ export async function flatDetailPage(flatId: number): Promise<string> {
   });
 
   const roomLabel = flat.rooms === 0 ? "Студия" : `${flat.rooms}-комн`;
-  const pikUrl = flat.url ? `https://www.pik.ru${flat.url}` : null;
+  const pikUrl = flat.url?.startsWith("http") ? flat.url : flat.url ? `https://www.pik.ru${flat.url}` : null;
 
   const historyRows = history
     .map((snap, i) => {

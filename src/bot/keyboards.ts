@@ -51,7 +51,8 @@ export function flatCardKeyboard(flatId: number, flatUrl?: string | null) {
     .text("📐 План", `flat:plan:${flatId}`);
 
   if (flatUrl) {
-    kb.url("🔗 pik.ru", `https://www.pik.ru${flatUrl}`);
+    const url = flatUrl.startsWith("http") ? flatUrl : `https://www.pik.ru${flatUrl}`;
+    kb.url("🔗 pik.ru", url);
   }
 
   return kb;
