@@ -21,6 +21,7 @@ export async function flatDetailPage(flatId: number): Promise<string> {
 
   const roomLabel = flat.rooms === 0 ? "Студия" : `${flat.rooms}-комн`;
   const pikUrl = flat.url?.startsWith("http") ? flat.url : flat.url ? `https://www.pik.ru${flat.url}` : null;
+  const isGone = flat.status === "gone" || flat.status === "sold";
 
   const historyRows = history
     .map((snap, i) => {
@@ -78,6 +79,15 @@ export async function flatDetailPage(flatId: number): Promise<string> {
       <span class="sep">/</span>
       <span>Кв. ${flat.number ?? flat.id}</span>
     </div>
+
+    ${isGone ? `
+    <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius);padding:14px 18px;margin:20px 0;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">🚫</span>
+      <div>
+        <div style="font-weight:600;color:var(--red)">Нет в продаже</div>
+        <div style="font-size:13px;color:var(--text-2)">Квартира больше не доступна — возможно, продана. Последняя известная цена: ${flat.currentPrice.toLocaleString("ru-RU")} ₽</div>
+      </div>
+    </div>` : ""}
 
     <h1 class="page-title">${flat.block.name}</h1>
     <p class="page-subtitle">${flat.block.location.name}${flat.block.address ? ` · ${flat.block.address}` : ""}</p>

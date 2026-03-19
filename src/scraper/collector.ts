@@ -174,6 +174,21 @@ export async function syncFlatsForBlock(blockId: number): Promise<PriceChange[]>
     }
   }
 
+  // Mark flats that disappeared from API as "gone" (likely sold)
+  const apiIds = new Set(rawFlats.filter((f) => f.id).map((f) => f.id));
+  const dbFlats = await prisma.flat.findMany({
+    where: { blockId, status: { in: ["free", "reserve"] } },
+    select: { id: true },
+  });
+  const goneIds = dbFlats.filter((f) => !apiIds.has(f.id)).map((f) => f.id);
+  if (goneIds.length > 0) {
+    await prisma.flat.updateMany({
+      where: { id: { in: goneIds } },
+      data: { status: "gone" },
+    });
+    console.log(`Marked ${goneIds.length} flats as gone in block ${blockId}`);
+  }
+
   return changes;
 }
 
