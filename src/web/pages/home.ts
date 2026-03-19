@@ -63,22 +63,7 @@ export async function homePage(): Promise<string> {
       </p>
     </div>
 
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-value">${locationCount}</div>
-        <div class="stat-label">Городов</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">${blockCount.toLocaleString("ru-RU")}</div>
-        <div class="stat-label">Жилых комплексов</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">${flatCount.toLocaleString("ru-RU")}</div>
-        <div class="stat-label">Квартир в продаже</div>
-      </div>
-    </div>
-
-    <h2 class="page-title" style="font-size:22px;margin-top:40px">Выберите город</h2>
+    <h2 class="page-title" style="font-size:22px;margin-top:0">Выберите город</h2>
     <div class="card-grid" style="margin-top:16px;margin-bottom:60px">
       ${locationCards || '<div class="empty"><div class="empty-icon">📭</div>Данные ещё не загружены</div>'}
     </div>
