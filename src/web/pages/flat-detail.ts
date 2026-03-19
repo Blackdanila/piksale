@@ -110,6 +110,21 @@ export async function flatDetailPage(flatId: number): Promise<string> {
       ${pikUrl ? `<a href="${pikUrl}" target="_blank" class="btn btn-ghost" style="margin-left:auto">🔗 Смотреть на pik.ru</a>` : ""}
     </div>
 
+    ${flat.planRender || flat.planSvg ? `
+    <h2 style="font-size:18px;font-weight:600;margin-bottom:12px">Планировка</h2>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+      ${flat.planRender ? `
+      <div class="card" style="flex:1;min-width:280px;text-align:center;padding:16px">
+        <img src="${flat.planRender}" alt="3D планировка" style="max-width:100%;max-height:400px;border-radius:8px" loading="lazy">
+        <div style="color:var(--text-3);font-size:12px;margin-top:8px">3D-рендер</div>
+      </div>` : ""}
+      ${flat.planSvg ? `
+      <div class="card" style="flex:1;min-width:280px;text-align:center;padding:16px">
+        <img src="${flat.planSvg}" alt="Планировка" style="max-width:100%;max-height:400px;border-radius:8px;background:#fff" loading="lazy">
+        <div style="color:var(--text-3);font-size:12px;margin-top:8px">Схема</div>
+      </div>` : ""}
+    </div>` : ""}
+
     ${
       history.length > 0
         ? `

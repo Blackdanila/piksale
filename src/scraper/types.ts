@@ -48,7 +48,8 @@ export interface PikFlat {
   layout?: {
     flat_plan_svg?: string;
     flat_plan_render?: string;
-  };
+    flat_plan_png?: string;
+  } | null;
   updated_at?: string;
 }
 

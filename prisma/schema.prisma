@@ -43,6 +43,8 @@ model Flat {
   currentPrice Int
   meterPrice   Int
   url          String?
+  planSvg      String?
+  planRender   String?
   updatedAt    DateTime        @updatedAt
   snapshots    PriceSnapshot[]
 
