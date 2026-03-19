@@ -16,4 +16,4 @@ COPY prisma ./prisma
 RUN npx prisma generate
 COPY --from=builder /app/dist ./dist
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && node dist/index.js"]
