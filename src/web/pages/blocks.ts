@@ -9,7 +9,9 @@ export async function blocksPage(
   locationId?: number,
   page = 1,
 ): Promise<string> {
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = {
+    flats: { some: { status: "free" } },
+  };
   if (locationId) where.locationId = locationId;
 
   const [blocks, total, locations, location] = await Promise.all([
@@ -17,7 +19,7 @@ export async function blocksPage(
       where,
       include: {
         location: true,
-        _count: { select: { flats: true } },
+        _count: { select: { flats: { where: { status: "free" } } } },
       },
       orderBy: { name: "asc" },
       skip: (page - 1) * PAGE_SIZE,

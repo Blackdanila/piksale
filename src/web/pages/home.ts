@@ -3,25 +3,50 @@ import { prisma } from "../../db/prisma.js";
 import { getHeaderStats } from "../stats.js";
 
 export async function homePage(): Promise<string> {
-  const [locationCount, blockCount, flatCount] = await Promise.all([
-    prisma.location.count(),
-    prisma.block.count(),
-    prisma.flat.count({ where: { status: "free" } }),
-  ]);
+  const flatCount = await prisma.flat.count({ where: { status: "free" } });
 
-  const locations = await prisma.location.findMany({
-    orderBy: { name: "asc" },
-    include: { _count: { select: { blocks: true } } },
+  // Only locations/blocks that have free flats
+  const blocksWithFlats = await prisma.block.findMany({
+    where: { flats: { some: { status: "free" } } },
+    select: { id: true, locationId: true },
   });
 
+  const blockCount = blocksWithFlats.length;
+  const locationIdsWithFlats = [...new Set(blocksWithFlats.map((b) => b.locationId))];
+
+  const locations = await prisma.location.findMany({
+    where: { id: { in: locationIdsWithFlats } },
+    orderBy: { name: "asc" },
+  });
+
+  const locationCount = locations.length;
+
+  // Count blocks and min price per location
+  const blockCountByLoc = new Map<number, number>();
+  for (const b of blocksWithFlats) {
+    blockCountByLoc.set(b.locationId, (blockCountByLoc.get(b.locationId) ?? 0) + 1);
+  }
+
+  const minPriceByLoc = new Map<number, number>();
+  for (const loc of locations) {
+    const agg = await prisma.flat.aggregate({
+      where: { status: "free", block: { locationId: loc.id } },
+      _min: { currentPrice: true },
+    });
+    if (agg._min.currentPrice) minPriceByLoc.set(loc.id, agg._min.currentPrice);
+  }
+
   const locationCards = locations
-    .map(
-      (loc) => `
+    .map((loc) => {
+      const minPrice = minPriceByLoc.get(loc.id);
+      const priceStr = minPrice ? `от ${(minPrice / 1_000_000).toFixed(1)} млн ₽` : "";
+      return `
       <a href="/blocks?location=${loc.id}" class="card" style="text-decoration:none;color:inherit">
         <div style="font-size:18px;font-weight:600">${loc.name}</div>
-        <div style="color:var(--text-3);font-size:14px;margin-top:4px">${loc._count.blocks} ЖК</div>
-      </a>`,
-    )
+        <div style="color:var(--text-3);font-size:14px;margin-top:4px">${blockCountByLoc.get(loc.id) ?? 0} ЖК</div>
+        ${priceStr ? `<div style="font-weight:600;font-size:14px;margin-top:8px;color:var(--text)">${priceStr}</div>` : ""}
+      </a>`;
+    })
     .join("");
 
   const stats = await getHeaderStats();
