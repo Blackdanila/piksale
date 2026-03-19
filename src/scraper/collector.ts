@@ -1,5 +1,5 @@
 import { prisma } from "../db/prisma.js";
-import { fetchLocations, fetchBlocks, fetchBlockImages, fetchBulks, fetchFlats } from "./client.js";
+import { fetchLocations, fetchBlocks, fetchBlockImages, fetchBlockImageFromPage, fetchBulks, fetchFlats } from "./client.js";
 import { computeAllDailyStats } from "./aggregator.js";
 import type { PikFlat } from "./types.js";
 
@@ -53,7 +53,12 @@ export async function syncBlocks() {
     const lat = block.latitude ?? block.lat ?? null;
     const lng = block.longitude ?? block.lng ?? null;
     const blockSlug = block.slug || toSlug(block.name, block.id);
-    const imgUrl = imageMap.get(block.id) ?? block.image ?? null;
+    let imgUrl = imageMap.get(block.id) ?? block.image ?? null;
+
+    // Fallback: scrape image from pik.ru page
+    if (!imgUrl && block.url) {
+      imgUrl = await fetchBlockImageFromPage(block.url);
+    }
 
     await prisma.block.upsert({
       where: { id: block.id },

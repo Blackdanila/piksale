@@ -16,6 +16,7 @@ export interface PikBlock {
   longitude?: number;
   lat?: number;
   lng?: number;
+  url?: string;
   metro?: Array<{ name: string; color: string; time: number }>;
 }
 

@@ -112,18 +112,30 @@ export async function flatDetailPage(flatId: number): Promise<string> {
 
     ${flat.planRender || flat.planSvg ? `
     <h2 style="font-size:18px;font-weight:600;margin-bottom:12px">Планировка</h2>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">
       ${flat.planRender ? `
-      <div class="card" style="flex:1;min-width:280px;text-align:center;padding:16px">
-        <img src="${flat.planRender}" alt="3D планировка" style="max-width:100%;max-height:400px;border-radius:8px" loading="lazy">
-        <div style="color:var(--text-3);font-size:12px;margin-top:8px">3D-рендер</div>
+      <div class="card" style="text-align:center;padding:12px;cursor:pointer" onclick="openPlan(this.querySelector('img').src)">
+        <img src="${flat.planRender}" alt="3D планировка" style="width:160px;height:160px;object-fit:contain;border-radius:6px" loading="lazy">
+        <div style="color:var(--text-3);font-size:11px;margin-top:6px">3D-рендер</div>
       </div>` : ""}
       ${flat.planSvg ? `
-      <div class="card" style="flex:1;min-width:280px;text-align:center;padding:16px">
-        <img src="${flat.planSvg}" alt="Планировка" style="max-width:100%;max-height:400px;border-radius:8px;background:#fff" loading="lazy">
-        <div style="color:var(--text-3);font-size:12px;margin-top:8px">Схема</div>
+      <div class="card" style="text-align:center;padding:12px;cursor:pointer" onclick="openPlan(this.querySelector('img').src)">
+        <img src="${flat.planSvg}" alt="Планировка" style="width:160px;height:160px;object-fit:contain;border-radius:6px;background:#fff" loading="lazy">
+        <div style="color:var(--text-3);font-size:11px;margin-top:6px">Схема</div>
       </div>` : ""}
-    </div>` : ""}
+    </div>
+
+    <!-- Lightbox -->
+    <div id="planLightbox" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;cursor:pointer;display:none;align-items:center;justify-content:center">
+      <img id="planLightboxImg" style="max-width:90vw;max-height:90vh;border-radius:12px;background:#fff">
+    </div>
+    <script>
+      function openPlan(src) {
+        const lb = document.getElementById('planLightbox');
+        document.getElementById('planLightboxImg').src = src;
+        lb.style.display = 'flex';
+      }
+    </script>` : ""}
 
     ${
       history.length > 0

@@ -36,6 +36,7 @@ export async function fetchBlocks(): Promise<PikBlock[]> {
       location_id: locationId ?? 0,
       address: (b.address as string) || (b.county as string) || undefined,
       image: undefined,
+      url: (b.url as string) || undefined,
       latitude: b.latitude ? parseFloat(String(b.latitude)) : undefined,
       longitude: b.longitude ? parseFloat(String(b.longitude)) : undefined,
     } as PikBlock;
@@ -74,6 +75,22 @@ export async function fetchBlockImages(): Promise<Map<number, string>> {
   }
 
   return imageMap;
+}
+
+export async function fetchBlockImageFromPage(pikPath: string): Promise<string | null> {
+  try {
+    const url = `https://www.pik.ru${pikPath}`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "PIKsale/1.0" },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    // Look for db-estate CDN images (block renders)
+    const match = html.match(/https:\/\/\d+\.db-estate\.cdn\.pik-service\.ru\/block\/[^"]+\.(jpg|png|webp)/);
+    return match ? match[0] : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchBulks(blockId: number): Promise<PikBulk[]> {
