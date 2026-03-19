@@ -1,4 +1,4 @@
-import type { PikLocation, PikBlock, PikFlat } from "./types.js";
+import type { PikLocation, PikBlock, PikBulk, PikFlat } from "./types.js";
 
 const BASE_URL = "https://api.pik.ru";
 
@@ -23,11 +23,9 @@ export async function fetchLocations(): Promise<PikLocation[]> {
 }
 
 export async function fetchBlocks(): Promise<PikBlock[]> {
-  // v1/block with metadata returns full data (coords, locations, address)
   const raw = await pikFetch<Record<string, unknown>[]>("/v1/block?metadata=1&types=1,2");
 
   return raw.map((b) => {
-    // Extract location_id from nested locations.child.id
     const locations = b.locations as { child?: { id?: number } } | undefined;
     const locationId = locations?.child?.id;
 
@@ -44,10 +42,13 @@ export async function fetchBlocks(): Promise<PikBlock[]> {
   });
 }
 
-export async function fetchFlats(blockId: number): Promise<PikFlat[]> {
-  const params = new URLSearchParams({
-    block_id: String(blockId),
-    type: "1",
-  });
-  return pikFetch<PikFlat[]>(`/v2/flat?${params}`);
+export async function fetchBulks(blockId: number): Promise<PikBulk[]> {
+  return pikFetch<PikBulk[]>(`/v1/bulk?block_id=${blockId}&type=1`);
+}
+
+export async function fetchFlats(blockId: number, bulkId: number): Promise<PikFlat[]> {
+  const data = await pikFetch<{ flats?: PikFlat[] }>(
+    `/v2/flat?block_id=${blockId}&bulk_id=${bulkId}&type=1`,
+  );
+  return data.flats ?? [];
 }

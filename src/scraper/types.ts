@@ -37,7 +37,8 @@ export interface PikFlat {
   floor: number;
   status: string;
   price: number;
-  meter_price: number;
+  meter_price?: number;
+  meterPrice?: number;
   url?: string;
   address?: string;
   area_living?: number;
