@@ -38,10 +38,15 @@ if (WEBHOOK_URL) {
 // Start scheduler
 startScheduler(bot);
 
-// Warmup cache
-warmupCache()
-  .then(() => console.log("Cache ready"))
-  .catch((err) => console.error("Cache warmup failed:", err));
+// Init bot + warmup cache
+Promise.all([
+  bot.init(),
+  warmupCache(),
+]).then(() => {
+  console.log("Bot initialized, cache ready");
+}).catch((err) => {
+  console.error("Init failed:", err);
+});
 
 // Start server
 serve({ fetch: app.fetch, port: PORT }, () => {
