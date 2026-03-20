@@ -3,7 +3,6 @@ import { serve } from "@hono/node-server";
 import { createBot } from "./bot/index.js";
 import { createWebApp } from "./web/server.js";
 import { startScheduler } from "./scheduler.js";
-import { webhookCallback } from "grammy";
 import { warmupCache } from "./db/queries.js";
 
 const token = process.env.BOT_TOKEN;
@@ -21,13 +20,16 @@ const app = createWebApp();
 
 // Bot webhook endpoint
 if (WEBHOOK_URL) {
-  const handleWebhook = webhookCallback(bot, "std/http");
   app.post("/bot/webhook", async (c) => {
     try {
-      const response = await handleWebhook(c.req.raw);
-      return response;
+      const body = await c.req.json();
+      // Process update asynchronously — respond immediately to TG
+      bot.handleUpdate(body).catch((err) => {
+        console.error("Bot update error:", err);
+      });
+      return c.json({ ok: true });
     } catch (err) {
-      console.error("Webhook handler error:", err);
+      console.error("Webhook parse error:", err);
       return c.json({ ok: true });
     }
   });
@@ -46,10 +48,7 @@ serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`PIKsale server running on http://localhost:${PORT}`);
 
   if (WEBHOOK_URL) {
-    bot.api
-      .setWebhook(`${WEBHOOK_URL}/bot/webhook`)
-      .then(() => console.log(`Webhook set: ${WEBHOOK_URL}/bot/webhook`))
-      .catch((err) => console.error("Failed to set webhook:", err));
+    console.log(`Bot running via webhook: ${WEBHOOK_URL}/bot/webhook`);
   } else {
     bot.start({
       onStart: () => console.log("Bot started (long polling)"),
