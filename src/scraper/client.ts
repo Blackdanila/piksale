@@ -83,8 +83,8 @@ export async function fetchBlockImages(): Promise<Map<number, string>> {
 
       for (const block of data.blocks ?? []) {
         const img =
-          block.image?.filter?.desktop ??
           block.image?.filter?.mobile ??
+          block.image?.filter?.desktop ??
           block.image?.last ??
           null;
         if (img) imageMap.set(block.id, img);
@@ -105,7 +105,9 @@ export async function fetchBlockImageFromPage(pikPath: string): Promise<string |
     });
     if (!res.ok) return null;
     const html = await res.text();
-    // Try db-estate CDN first (high-res renders)
+    // Prefer 686x (mobile-size) renders from db-estate CDN
+    const matchMobile = html.match(/https:\/\/\d+\.db-estate\.cdn\.pik-service\.ru\/block\/[^"\s]*686x[^"\s]*\.(jpg|png|webp)/);
+    if (matchMobile) return matchMobile[0];
     const match1 = html.match(/https:\/\/\d+\.db-estate\.cdn\.pik-service\.ru\/block\/[^"\s]+\.(jpg|png|webp)/);
     if (match1) return match1[0];
     // Then try cdn.pik.ru slider images
