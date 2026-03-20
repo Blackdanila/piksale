@@ -47,6 +47,7 @@ model Flat {
   url          String?
   planSvg      String?
   planRender   String?
+  settlementDate String?
   updatedAt    DateTime        @updatedAt
   snapshots    PriceSnapshot[]
 

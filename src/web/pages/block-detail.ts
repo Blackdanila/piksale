@@ -116,12 +116,16 @@ export async function blockDetailPage(
         ? `<a href="${pikUrl}" target="_blank" rel="noopener" style="font-size:12px">pik.ru →</a>`
         : "";
 
+      const settlement = flat.settlementDate
+        ? new Date(flat.settlementDate).toLocaleDateString("ru-RU", { month: "short", year: "numeric" })
+        : "—";
+
       return `<tr>
         <td><a href="/flats/${flat.id}">${roomLabel}</a></td>
         <td>${flat.area} м²</td>
         <td>${flat.floor}</td>
         <td${flat.bulkName ? "" : ' style="color:var(--text-3)"'}>${flat.bulkName ?? "—"}</td>
-        <td${flat.number ? "" : ' style="color:var(--text-3)"'}>${flat.number ?? "—"}</td>
+        <td style="color:var(--text-2)">${settlement}</td>
         <td style="font-weight:600">${price} ₽</td>
         <td style="color:var(--text-2)">${meterPrice} ₽/м²</td>
         <td>${linkCell}</td>
@@ -203,7 +207,7 @@ export async function blockDetailPage(
             <th>Площадь</th>
             <th>Этаж</th>
             <th>Корпус</th>
-            <th>Кв.</th>
+            <th>Сдача</th>
             <th>Цена</th>
             <th>₽/м²</th>
             <th></th>

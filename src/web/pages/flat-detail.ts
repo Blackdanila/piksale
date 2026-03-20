@@ -122,6 +122,14 @@ export async function flatDetailPage(flatId: number): Promise<string> {
         <div class="stat-value">${flat.meterPrice.toLocaleString("ru-RU")} ₽</div>
         <div class="stat-label">Цена за м²</div>
       </div>
+      ${flat.settlementDate ? `<div class="stat">
+        <div class="stat-value">${new Date(flat.settlementDate).toLocaleDateString("ru-RU", { month: "long", year: "numeric" })}</div>
+        <div class="stat-label">Срок сдачи</div>
+      </div>` : ""}
+      ${flat.bulkName ? `<div class="stat">
+        <div class="stat-value">${flat.bulkName}</div>
+        <div class="stat-label">Корпус</div>
+      </div>` : ""}
     </div>
 
     <div style="display:flex;align-items:center;gap:16px;margin:24px 0;flex-wrap:wrap">

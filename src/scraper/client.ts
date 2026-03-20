@@ -128,6 +128,7 @@ export async function fetchFlats(blockId: number): Promise<PikFlat[]> {
   // Fetch all flats for block via pagination (no bulk_id needed)
   const allFlats: PikFlat[] = [];
   const bulkNames = new Map<number, string>();
+  const bulkSettlement = new Map<number, string>();
   let page = 1;
   const limit = 50;
 
@@ -135,13 +136,14 @@ export async function fetchFlats(blockId: number): Promise<PikFlat[]> {
     const data = await pikFetch<{
       flats?: PikFlat[];
       count?: number;
-      bulks?: Array<{ id: number; name?: string; title?: string }>;
+      bulks?: Array<{ id: number; name?: string; title?: string; settlement_date?: string }>;
     }>(`/v2/flat?block_id=${blockId}&type=1&page=${page}&limit=${limit}`);
 
-    // Collect bulk names from first page
+    // Collect bulk names and settlement dates from first page
     if (page === 1 && data.bulks) {
       for (const b of data.bulks) {
         bulkNames.set(b.id, b.name ?? b.title ?? String(b.id));
+        if (b.settlement_date) bulkSettlement.set(b.id, b.settlement_date);
       }
     }
 
@@ -156,10 +158,11 @@ export async function fetchFlats(blockId: number): Promise<PikFlat[]> {
     await new Promise((r) => setTimeout(r, 50));
   }
 
-  // Enrich flats with bulk names
+  // Enrich flats with bulk names and settlement dates
   for (const flat of allFlats) {
-    if (flat.bulk_id && !flat.bulk_name) {
-      flat.bulk_name = bulkNames.get(flat.bulk_id);
+    if (flat.bulk_id) {
+      if (!flat.bulk_name) flat.bulk_name = bulkNames.get(flat.bulk_id);
+      if (!flat.settlement_date) flat.settlement_date = bulkSettlement.get(flat.bulk_id);
     }
   }
 

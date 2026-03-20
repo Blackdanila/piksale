@@ -51,6 +51,7 @@ export interface PikFlat {
     flat_plan_render?: string;
     flat_plan_png?: string;
   } | null;
+  settlement_date?: string;
   updated_at?: string;
 }
 

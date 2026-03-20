@@ -121,6 +121,7 @@ export async function syncFlatsForBlock(blockId: number): Promise<PriceChange[]>
       url: raw.url ?? null,
       planSvg: raw.layout?.flat_plan_svg ?? null,
       planRender: raw.layout?.flat_plan_render ?? null,
+      settlementDate: raw.settlement_date ?? null,
     };
 
     await prisma.flat.upsert({
