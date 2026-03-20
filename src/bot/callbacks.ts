@@ -144,7 +144,22 @@ async function routeCallback(ctx: Context, data: string) {
     }
     const text = formatFlatCard(flat);
     const kb = flatCardKeyboard(flatId, flat.url);
-    await ctx.editMessageText(text, { reply_markup: kb });
+    const planUrl = flat.planRender ?? flat.planSvg;
+
+    if (planUrl) {
+      // Send plan as photo with flat info as caption
+      try {
+        await ctx.replyWithPhoto(planUrl, {
+          caption: text,
+          reply_markup: kb,
+        });
+      } catch {
+        // Fallback to text if photo fails
+        await ctx.editMessageText(text, { reply_markup: kb });
+      }
+    } else {
+      await ctx.editMessageText(text, { reply_markup: kb });
+    }
     await ctx.answerCallbackQuery();
     return;
   }
@@ -157,8 +172,24 @@ async function routeCallback(ctx: Context, data: string) {
 
   if (data.startsWith("flat:plan:")) {
     const flatId = parseInt(data.split(":")[2], 10);
-    // TODO: fetch layout from PIK API and send as photo
-    await ctx.answerCallbackQuery("Планировка пока недоступна");
+    const flatForPlan = await getFlat(flatId);
+    if (!flatForPlan) {
+      await ctx.answerCallbackQuery("Квартира не найдена");
+      return;
+    }
+    const planUrl = flatForPlan.planRender ?? flatForPlan.planSvg;
+    if (!planUrl) {
+      await ctx.answerCallbackQuery("Планировка недоступна для этой квартиры");
+      return;
+    }
+    try {
+      await ctx.replyWithPhoto(planUrl, {
+        caption: `📐 ${flatForPlan.block.name}${flatForPlan.bulkName ? ` · ${flatForPlan.bulkName}` : ""}\n${flatForPlan.rooms === 0 ? "Студия" : `${flatForPlan.rooms}-комн`} · ${flatForPlan.area}м² · ${flatForPlan.floor} эт.`,
+      });
+    } catch {
+      await ctx.answerCallbackQuery("Не удалось загрузить планировку");
+    }
+    await ctx.answerCallbackQuery();
     return;
   }
 
