@@ -1,6 +1,7 @@
 import { prisma } from "../db/prisma.js";
 import { fetchLocations, fetchBlocks, fetchBlockImages, fetchBlockImageFromPage, fetchFlats } from "./client.js";
 import { computeAllDailyStats } from "./aggregator.js";
+import { invalidateAllCaches, warmupCache } from "../db/queries.js";
 import type { PikFlat } from "./types.js";
 
 interface PriceChange {
@@ -201,6 +202,10 @@ export async function collectAll(): Promise<PriceChange[]> {
 
   // Compute daily aggregates after all flats are synced
   await computeAllDailyStats();
+
+  // Invalidate and re-warm caches
+  invalidateAllCaches();
+  await warmupCache();
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log(

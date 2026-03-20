@@ -4,6 +4,7 @@ import { createBot } from "./bot/index.js";
 import { createWebApp } from "./web/server.js";
 import { startScheduler } from "./scheduler.js";
 import { webhookCallback } from "grammy";
+import { warmupCache } from "./db/queries.js";
 
 const token = process.env.BOT_TOKEN;
 if (!token) {
@@ -29,6 +30,13 @@ if (WEBHOOK_URL) {
 
 // Start scheduler
 startScheduler(bot);
+
+// Warmup cache then start server
+warmupCache().then(() => {
+  console.log("Cache ready");
+}).catch((err) => {
+  console.error("Cache warmup failed:", err);
+});
 
 // Start server
 serve({ fetch: app.fetch, port: PORT }, async () => {
