@@ -4,7 +4,7 @@ import { prisma } from "../../db/prisma.js";
 import { locationIndicator } from "../components/location-indicator.js";
 import { getHeaderStats } from "../stats.js";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 export async function blockDetailPage(
   blockId: number,
@@ -120,7 +120,13 @@ export async function blockDetailPage(
         ? new Date(flat.settlementDate).toLocaleDateString("ru-RU", { month: "short", year: "numeric" })
         : "—";
 
+      const planThumb = flat.planRender ?? flat.planSvg;
+      const planCell = planThumb
+        ? `<img src="${planThumb}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:4px;${flat.planSvg && !flat.planRender ? "background:#fff;" : ""}vertical-align:middle" loading="lazy">`
+        : `<span style="color:var(--text-3);font-size:20px">—</span>`;
+
       return `<tr>
+        <td style="width:56px;padding:6px 8px"><a href="/flats/${flat.id}">${planCell}</a></td>
         <td><a href="/flats/${flat.id}">${roomLabel}</a></td>
         <td>${flat.area} м²</td>
         <td>${flat.floor}</td>
@@ -203,6 +209,7 @@ export async function blockDetailPage(
       <table>
         <thead>
           <tr>
+            <th style="width:56px"></th>
             <th>Тип</th>
             <th>Площадь</th>
             <th>Этаж</th>
