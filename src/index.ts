@@ -19,32 +19,37 @@ const bot = createBot(token);
 // Web app
 const app = createWebApp();
 
-// Bot webhook endpoint (only used in production)
+// Bot webhook endpoint
 if (WEBHOOK_URL) {
   const handleWebhook = webhookCallback(bot, "std/http");
   app.post("/bot/webhook", async (c) => {
-    const response = await handleWebhook(c.req.raw);
-    return response;
+    try {
+      const response = await handleWebhook(c.req.raw);
+      return response;
+    } catch (err) {
+      console.error("Webhook handler error:", err);
+      return c.json({ ok: true });
+    }
   });
 }
 
 // Start scheduler
 startScheduler(bot);
 
-// Warmup cache then start server
-warmupCache().then(() => {
-  console.log("Cache ready");
-}).catch((err) => {
-  console.error("Cache warmup failed:", err);
-});
+// Warmup cache
+warmupCache()
+  .then(() => console.log("Cache ready"))
+  .catch((err) => console.error("Cache warmup failed:", err));
 
 // Start server
-serve({ fetch: app.fetch, port: PORT }, async () => {
+serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`PIKsale server running on http://localhost:${PORT}`);
 
   if (WEBHOOK_URL) {
-    await bot.api.setWebhook(`${WEBHOOK_URL}/bot/webhook`);
-    console.log(`Bot webhook set to ${WEBHOOK_URL}/bot/webhook`);
+    bot.api
+      .setWebhook(`${WEBHOOK_URL}/bot/webhook`)
+      .then(() => console.log(`Webhook set: ${WEBHOOK_URL}/bot/webhook`))
+      .catch((err) => console.error("Failed to set webhook:", err));
   } else {
     bot.start({
       onStart: () => console.log("Bot started (long polling)"),
