@@ -162,14 +162,14 @@ export async function getBlockAvgPriceHistory(blockId: number, days = 30) {
     Array<{ date: string; avg_price: number; avg_meter_price: number }>
   >`
     SELECT
-      DATE(date) as date,
-      AVG("meterPrice")::int as avg_meter_price,
-      AVG(price)::int as avg_price
+      DATE(ps.date) as date,
+      AVG(ps."meterPrice")::int as avg_meter_price,
+      AVG(ps.price)::int as avg_price
     FROM "PriceSnapshot" ps
     JOIN "Flat" f ON f.id = ps."flatId"
     WHERE f."blockId" = ${blockId}
       AND ps.date >= ${since}
-    GROUP BY DATE(date)
+    GROUP BY DATE(ps.date)
     ORDER BY date DESC
   `;
 

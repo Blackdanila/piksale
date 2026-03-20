@@ -15,7 +15,9 @@ import {
   handleUnsubscribe,
 } from "./commands/subscribe.js";
 import {
+  handleDynamics,
   handleDynamicsLocationSelect,
+  handleDynamicsCity,
   handleDynamicsBlockSelect,
   handleDynamicsPeriod,
   handleFlatHistory,
@@ -113,7 +115,20 @@ async function routeCallback(ctx: Context, data: string) {
     return;
   }
 
-  // Dynamics: dyn:loc:{id}, dyn:{locId}:block:{id}, dyn:{blockId}:{days}
+  // Dynamics: dynloc:{locId}:{days}, dyn:loc:{id}, dyn:{locId}:block:{id}, dyn:{blockId}:{days}
+  if (data.match(/^dynloc:\d+:\d+$/)) {
+    const parts = data.split(":");
+    const locId = parseInt(parts[1], 10);
+    const days = parseInt(parts[2], 10);
+    await handleDynamicsCity(ctx, locId, days);
+    return;
+  }
+
+  if (data === "dyn:back") {
+    await handleDynamics(ctx);
+    return;
+  }
+
   if (data.startsWith("dyn:loc:")) {
     const locId = parseInt(data.split(":")[2], 10);
     await handleDynamicsLocationSelect(ctx, locId);
