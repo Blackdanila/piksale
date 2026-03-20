@@ -1,5 +1,5 @@
 import { prisma } from "../db/prisma.js";
-import { fetchLocations, fetchBlocks, fetchBlockImages, fetchBlockImageFromPage, fetchBulks, fetchFlats } from "./client.js";
+import { fetchLocations, fetchBlocks, fetchBlockImages, fetchBlockImageFromPage, fetchFlats } from "./client.js";
 import { computeAllDailyStats } from "./aggregator.js";
 import type { PikFlat } from "./types.js";
 
@@ -90,32 +90,12 @@ export async function syncBlocks() {
 export async function syncFlatsForBlock(blockId: number): Promise<PriceChange[]> {
   const changes: PriceChange[] = [];
 
-  // First get all bulks (buildings) for this block
-  let bulks: Array<{ id: number; name?: string }>;
+  let rawFlats: PikFlat[];
   try {
-    bulks = await fetchBulks(blockId);
+    rawFlats = await fetchFlats(blockId);
   } catch (err) {
-    console.error(`Failed to fetch bulks for block ${blockId}:`, err);
+    console.error(`Failed to fetch flats for block ${blockId}:`, err);
     return changes;
-  }
-
-  if (!Array.isArray(bulks) || bulks.length === 0) return changes;
-
-  // Fetch flats for each bulk
-  const rawFlats: PikFlat[] = [];
-  for (const bulk of bulks) {
-    try {
-      const flats = await fetchFlats(blockId, bulk.id);
-      for (const f of flats) {
-        f.bulk_id = bulk.id;
-        f.bulk_name = f.bulk_name ?? bulk.name ?? String(bulk.id);
-      }
-      rawFlats.push(...flats);
-    } catch (err) {
-      console.error(`Failed to fetch flats for block ${blockId} bulk ${bulk.id}:`, err);
-    }
-    // Small delay between bulk requests
-    await new Promise((r) => setTimeout(r, 50));
   }
 
   if (rawFlats.length === 0) return changes;
