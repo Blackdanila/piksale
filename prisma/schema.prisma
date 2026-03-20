@@ -27,6 +27,8 @@ model Block {
   flats         Flat[]
   subscriptions Subscription[]
   dailyStats    BlockDailyStats[]
+
+  @@index([locationId])
 }
 
 model Flat {
@@ -48,6 +50,9 @@ model Flat {
   updatedAt    DateTime        @updatedAt
   snapshots    PriceSnapshot[]
 
+  @@index([blockId, status])
+  @@index([status, currentPrice])
+  @@index([status, rooms])
   @@index([blockId])
   @@index([rooms])
   @@index([status])
