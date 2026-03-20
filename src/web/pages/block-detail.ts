@@ -120,13 +120,13 @@ export async function blockDetailPage(
         ? new Date(flat.settlementDate).toLocaleDateString("ru-RU", { month: "short", year: "numeric" })
         : "—";
 
-      const planThumb = flat.planRender ?? flat.planSvg;
+      const planThumb = flat.planSvg ?? flat.planRender;
       const planCell = planThumb
-        ? `<img src="${planThumb}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:4px;${flat.planSvg && !flat.planRender ? "background:#fff;" : ""}vertical-align:middle" loading="lazy">`
+        ? `<img src="${planThumb}" alt="" style="width:64px;height:64px;object-fit:contain;border-radius:4px;background:#fff;vertical-align:middle" loading="lazy">`
         : `<span style="color:var(--text-3);font-size:20px">—</span>`;
 
       return `<tr>
-        <td style="width:56px;padding:6px 8px"><a href="/flats/${flat.id}">${planCell}</a></td>
+        <td style="width:72px;padding:6px 8px"><a href="/flats/${flat.id}">${planCell}</a></td>
         <td><a href="/flats/${flat.id}">${roomLabel}</a></td>
         <td>${flat.area} м²</td>
         <td>${flat.floor}</td>
@@ -209,7 +209,7 @@ export async function blockDetailPage(
       <table>
         <thead>
           <tr>
-            <th style="width:56px"></th>
+            <th style="width:72px"></th>
             <th>Тип</th>
             <th>Площадь</th>
             <th>Этаж</th>
