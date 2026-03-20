@@ -1,37 +1,76 @@
 import { prisma } from "./prisma.js";
+import type { Location, Block } from "@prisma/client";
+
+// --- Cache ---
+
+const CACHE_TTL = 10 * 60_000; // 10 minutes
+
+interface CacheEntry<T> { data: T; at: number }
+
+const cache = {
+  locations: null as CacheEntry<Location[]> | null,
+  blocksByLoc: new Map<number, CacheEntry<Block[]>>(),
+  blocks: new Map<number, CacheEntry<Block>>(),
+  flatCounts: new Map<number, CacheEntry<number>>(),
+  minPrices: new Map<number, CacheEntry<number | null>>(),
+};
+
+function isFresh<T>(entry: CacheEntry<T> | null | undefined): entry is CacheEntry<T> {
+  return !!entry && Date.now() - entry.at < CACHE_TTL;
+}
 
 // --- Locations ---
 
 export async function getLocations() {
-  return prisma.location.findMany({ orderBy: { name: "asc" } });
+  if (isFresh(cache.locations)) return cache.locations.data;
+  const data = await prisma.location.findMany({ orderBy: { name: "asc" } });
+  cache.locations = { data, at: Date.now() };
+  return data;
 }
 
 // --- Blocks ---
 
 export async function getBlocksByLocation(locationId: number) {
-  return prisma.block.findMany({
+  const cached = cache.blocksByLoc.get(locationId);
+  if (isFresh(cached)) return cached.data;
+  const data = await prisma.block.findMany({
     where: { locationId },
     orderBy: { name: "asc" },
   });
+  cache.blocksByLoc.set(locationId, { data, at: Date.now() });
+  return data;
 }
 
 export async function getBlock(blockId: number) {
-  return prisma.block.findUnique({ where: { id: blockId } });
+  const cached = cache.blocks.get(blockId);
+  if (isFresh(cached)) return cached.data;
+  const data = await prisma.block.findUnique({ where: { id: blockId } });
+  if (data) cache.blocks.set(blockId, { data, at: Date.now() });
+  return data;
 }
 
 export async function countFlatsByBlock(blockId: number) {
-  return prisma.flat.count({ where: { blockId, status: "free" } });
+  const cached = cache.flatCounts.get(blockId);
+  if (isFresh(cached)) return cached.data;
+  const data = await prisma.flat.count({ where: { blockId, status: "free" } });
+  cache.flatCounts.set(blockId, { data, at: Date.now() });
+  return data;
 }
 
 export async function getMinPriceByBlock(blockId: number) {
+  const cached = cache.minPrices.get(blockId);
+  if (isFresh(cached)) return cached.data;
   const result = await prisma.flat.aggregate({
     where: { blockId, status: "free" },
     _min: { currentPrice: true },
   });
-  return result._min.currentPrice;
+  const data = result._min.currentPrice;
+  cache.minPrices.set(blockId, { data, at: Date.now() });
+  return data;
 }
 
 // --- Flats ---
+
 
 export interface FlatFilter {
   blockId?: number;
@@ -84,11 +123,23 @@ export async function searchFlats(filter: FlatFilter, page = 1, pageSize = 5) {
   return { flats, total, page, totalPages: Math.ceil(total / pageSize) };
 }
 
-export async function getFlat(flatId: number) {
+type FlatWithBlock = NonNullable<Awaited<ReturnType<typeof _getFlatRaw>>>;
+
+async function _getFlatRaw(flatId: number) {
   return prisma.flat.findUnique({
     where: { id: flatId },
     include: { block: true },
   });
+}
+
+const flatCache = new Map<number, CacheEntry<FlatWithBlock>>();
+
+export async function getFlat(flatId: number) {
+  const cached = flatCache.get(flatId);
+  if (isFresh(cached)) return cached.data;
+  const data = await _getFlatRaw(flatId);
+  if (data) flatCache.set(flatId, { data, at: Date.now() });
+  return data;
 }
 
 // --- Price Snapshots ---
