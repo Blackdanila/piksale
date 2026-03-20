@@ -26,14 +26,34 @@ export async function fetchBlocks(): Promise<PikBlock[]> {
   const raw = await pikFetch<Record<string, unknown>[]>("/v1/block?metadata=1&types=1,2");
 
   return raw.map((b) => {
-    const locations = b.locations as { child?: { id?: number } } | undefined;
-    const locationId = locations?.child?.id;
+    const locations = b.locations as {
+      parent?: { id?: number; name?: string };
+      child?: { id?: number; name?: string };
+    } | undefined;
+
+    // Hierarchy: root(1) -> city/region -> district
+    // /v1/location returns top-level locations (id:2 = "Москва и область")
+    // But block hierarchy has: root(1)->Москва(2)->СВАО(32), or root(1)->МО(3)->Люберцы(8)
+    // We need to map to the /v1/location IDs
+    const parentId = locations?.parent?.id;
+    const childId = locations?.child?.id;
+    let locationId: number;
+    if (parentId === 1) {
+      // parent=root, child is top-level (city or region)
+      locationId = childId ?? 0;
+    } else {
+      // parent=city/region, child=district — use parent
+      locationId = parentId ?? childId ?? 0;
+    }
+    // Merge sub-regions into their top-level /v1/location IDs
+    if (locationId === 3) locationId = 2;   // МО -> Москва и область
+    if (locationId === 86) locationId = 81; // Лен. обл -> СПб и область
 
     return {
       id: b.id as number,
       name: (b.name as string) || "",
       slug: (b.slug as string) || null,
-      location_id: locationId ?? 0,
+      location_id: locationId,
       address: (b.address as string) || (b.county as string) || undefined,
       image: undefined,
       url: (b.url as string) || undefined,
