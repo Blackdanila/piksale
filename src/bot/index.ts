@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Bot, type BotConfig, type Context } from "grammy";
 import { handleStart } from "./commands/start.js";
 import { handleProjects } from "./commands/projects.js";
 import { handleSearch } from "./commands/search.js";
@@ -6,8 +6,8 @@ import { handleMyProjects } from "./commands/subscribe.js";
 import { handleDynamics } from "./commands/dynamics.js";
 import { handleCallback } from "./callbacks.js";
 
-export function createBot(token: string) {
-  const bot = new Bot(token);
+export function createBot(token: string, config?: Omit<BotConfig<Context>, "client">) {
+  const bot = new Bot(token, config);
 
   // Commands
   bot.command("start", handleStart);

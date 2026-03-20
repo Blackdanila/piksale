@@ -13,7 +13,21 @@ if (!token) {
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
-const bot = createBot(token);
+const bot = createBot(token, {
+  botInfo: {
+    id: 8503668466,
+    is_bot: true,
+    first_name: "ПИК | Динамика цен",
+    username: "piksalebot",
+    can_join_groups: true,
+    can_read_all_group_messages: false,
+    supports_inline_queries: false,
+    can_connect_to_business: false,
+    has_main_web_app: false,
+    has_topics_enabled: false,
+    allows_users_to_create_topics: false,
+  },
+});
 
 // Web app
 const app = createWebApp();
@@ -38,15 +52,10 @@ if (WEBHOOK_URL) {
 // Start scheduler
 startScheduler(bot);
 
-// Init bot + warmup cache
-Promise.all([
-  bot.init(),
-  warmupCache(),
-]).then(() => {
-  console.log("Bot initialized, cache ready");
-}).catch((err) => {
-  console.error("Init failed:", err);
-});
+// Warmup cache
+warmupCache()
+  .then(() => console.log("Cache ready"))
+  .catch((err) => console.error("Cache warmup failed:", err));
 
 // Start server
 serve({ fetch: app.fetch, port: PORT }, () => {
