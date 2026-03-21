@@ -5,9 +5,22 @@ import { blocksPage } from "./pages/blocks.js";
 import { blockDetailPage } from "./pages/block-detail.js";
 import { flatDetailPage } from "./pages/flat-detail.js";
 import { dynamicsPage } from "./pages/dynamics.js";
+import { faviconSvg } from "./favicon.js";
 
 export function createWebApp() {
   const app = new Hono();
+
+  // Favicon
+  app.get("/favicon.svg", (c) => {
+    c.header("Content-Type", "image/svg+xml");
+    c.header("Cache-Control", "public, max-age=604800");
+    return c.body(faviconSvg);
+  });
+  app.get("/favicon.ico", (c) => {
+    c.header("Content-Type", "image/svg+xml");
+    c.header("Cache-Control", "public, max-age=604800");
+    return c.body(faviconSvg);
+  });
 
   // API routes
   app.route("/api/v1", apiRoutes);
