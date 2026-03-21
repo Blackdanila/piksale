@@ -41,6 +41,7 @@ export function layout(title: string, body: string, head = "", stats?: HeaderSta
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PIKsale">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="yandex-verification" content="ea0750b1a76b1f37">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
