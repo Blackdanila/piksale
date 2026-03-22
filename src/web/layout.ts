@@ -325,7 +325,7 @@ export function layout(title: string, body: string, head = "", stats?: HeaderSta
         <a href="/">Главная</a>
         <a href="/blocks">ЖК</a>
         <a href="/dynamics">Динамика</a>
-        <a href="https://t.me/piksale_bot" target="_blank" style="color:var(--accent)">TG-бот</a>
+        <a href="https://t.me/piksalebot" target="_blank" style="color:var(--accent)">TG-бот</a>
       </nav>
     </div>
   </header>
