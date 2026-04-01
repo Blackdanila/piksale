@@ -11,7 +11,7 @@ services:
       - WEBHOOK_URL=${WEBHOOK_URL:-}
       - PORT=3000
     extra_hosts:
-      - "api.telegram.org:149.154.166.110"
+      - "api.telegram.org:149.154.167.220"
     dns:
       - 8.8.8.8
       - 1.1.1.1
