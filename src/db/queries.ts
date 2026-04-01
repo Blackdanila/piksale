@@ -108,7 +108,11 @@ export async function searchFlats(filter: FlatFilter, page = 1, pageSize = 5) {
   const where: Record<string, unknown> = { status: "free" };
 
   if (filter.blockId) where.blockId = filter.blockId;
-  if (filter.locationId) where.block = { locationId: filter.locationId };
+  if (filter.locationId) {
+    // Use cached block IDs instead of slow Prisma relation filter
+    const blocks = await getBlocksByLocation(filter.locationId);
+    where.blockId = { in: blocks.map((b) => b.id) };
+  }
   if (filter.rooms !== undefined) where.rooms = filter.rooms;
   if (filter.areaMin || filter.areaMax) {
     where.area = {
