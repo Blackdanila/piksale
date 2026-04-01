@@ -45,7 +45,7 @@ export function blockListKeyboard(
   return kb;
 }
 
-export function flatCardKeyboard(flatId: number, flatUrl?: string | null) {
+export function flatCardKeyboard(flatId: number, flatUrl?: string | null, blockId?: number) {
   const kb = new InlineKeyboard()
     .text("📊 Цены", `flat:history:${flatId}`)
     .text("📐 План", `flat:plan:${flatId}`);
@@ -53,6 +53,10 @@ export function flatCardKeyboard(flatId: number, flatUrl?: string | null) {
   if (flatUrl) {
     const url = flatUrl.startsWith("http") ? flatUrl : `https://www.pik.ru${flatUrl}`;
     kb.url("🔗 pik.ru", url);
+  }
+
+  if (blockId) {
+    kb.row().text("🔔 Подписаться на ЖК", `sub:${blockId}`);
   }
 
   return kb;

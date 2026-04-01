@@ -163,7 +163,7 @@ async function routeCallback(ctx: Context, data: string) {
       return;
     }
     const text = formatFlatCard(flat);
-    const kb = flatCardKeyboard(flatId, flat.url);
+    const kb = flatCardKeyboard(flatId, flat.url, flat.blockId);
     const planUrl = flat.planRender ?? flat.planSvg;
 
     if (planUrl) {
