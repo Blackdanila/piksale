@@ -193,6 +193,57 @@ export async function homePage(): Promise<string> {
     </div>`;
   }
 
+  // --- Sold yesterday ---
+  const now = new Date();
+  const mskOffset = 3 * 60 * 60 * 1000;
+  const mskNow = new Date(now.getTime() + mskOffset);
+  const mskTodayStart = new Date(Date.UTC(mskNow.getUTCFullYear(), mskNow.getUTCMonth(), mskNow.getUTCDate()) - mskOffset);
+  const mskYesterdayStart = new Date(mskTodayStart.getTime() - 86400000);
+
+  const soldYesterday = await prisma.flat.findMany({
+    where: {
+      status: "sold",
+      updatedAt: { gte: mskYesterdayStart, lt: mskTodayStart },
+    },
+    include: { block: { select: { name: true, id: true } } },
+    orderBy: { currentPrice: "desc" },
+    take: 20,
+  });
+
+  let soldHtml = "";
+  if (soldYesterday.length > 0) {
+    const soldRows = soldYesterday
+      .map((f) => {
+        const roomLabel = f.rooms === 0 ? "Студия" : `${f.rooms}-комн`;
+        return `<tr>
+          <td><a href="/blocks/${f.block.id}">${f.block.name}</a></td>
+          <td>${roomLabel} · ${f.area}м²</td>
+          <td>${f.floor} эт.</td>
+          <td style="text-align:right;font-weight:600">${(f.currentPrice / 1_000_000).toFixed(1)} млн ₽</td>
+          <td style="text-align:right;color:var(--text-3)">${f.meterPrice.toLocaleString("ru-RU")} ₽/м²</td>
+        </tr>`;
+      })
+      .join("");
+
+    soldHtml = `
+    <h2 class="page-title" style="font-size:22px;margin-top:40px">🏷️ Продано вчера</h2>
+    <p class="page-subtitle">Квартиры, проданные за вчерашний день</p>
+    <div class="table-wrap" style="margin-bottom:32px">
+      <table>
+        <thead>
+          <tr>
+            <th>ЖК</th>
+            <th>Квартира</th>
+            <th>Этаж</th>
+            <th style="text-align:right">Цена</th>
+            <th style="text-align:right">За м²</th>
+          </tr>
+        </thead>
+        <tbody>${soldRows}</tbody>
+      </table>
+    </div>`;
+  }
+
   const stats = await getHeaderStats();
 
   const seo: SeoMeta = {
@@ -221,6 +272,8 @@ export async function homePage(): Promise<string> {
     </div>
 
     ${dropsHtml}
+
+    ${soldHtml}
   `,
     "",
     stats,
