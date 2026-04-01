@@ -65,7 +65,7 @@ const _minPricesCache = { entry: null as CacheEntry<Map<number, number>> | null 
 
 async function _fetchMinPrices() {
   const rows = await prisma.$queryRaw<Array<{ blockId: number; min_price: bigint }>>`
-    SELECT "blockId", MIN("currentPrice")::bigint as min_price
+    SELECT "blockId", MIN(COALESCE("benefitPrice", "currentPrice"))::bigint as min_price
     FROM "Flat"
     WHERE status = 'free' AND "currentPrice" > 0
     GROUP BY "blockId"

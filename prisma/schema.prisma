@@ -44,6 +44,8 @@ model Flat {
   status       String
   currentPrice Int
   meterPrice   Int
+  benefitPrice Int?
+  benefitMeterPrice Int?
   url          String?
   planSvg      String?
   planRender   String?
@@ -66,6 +68,8 @@ model PriceSnapshot {
   flat       Flat     @relation(fields: [flatId], references: [id])
   price      Int
   meterPrice Int
+  benefitPrice Int?
+  benefitMeterPrice Int?
   date       DateTime @default(now())
 
   @@index([flatId, date])

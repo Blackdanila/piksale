@@ -53,6 +53,12 @@ export interface PikFlat {
   } | null;
   settlement_date?: string;
   updated_at?: string;
+  benefits?: Record<string, Array<{
+    benefitPrice?: number;
+    priceMeter?: number;
+    discount?: number;
+    discountPercent?: number;
+  }>>;
 }
 
 export interface PikApiResponse<T> {

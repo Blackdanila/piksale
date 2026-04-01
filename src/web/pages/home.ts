@@ -214,13 +214,15 @@ export async function homePage(): Promise<string> {
     const soldRows = soldYesterday
       .map((f, i) => {
         const roomLabel = f.rooms === 0 ? "Студия" : `${f.rooms}-комн`;
+        const effPrice = f.benefitPrice ?? f.currentPrice;
+        const effMeter = f.benefitMeterPrice ?? f.meterPrice;
         const hidden = i >= 10 ? ' class="sold-hidden" style="display:none"' : "";
         return `<tr${hidden}>
           <td><a href="/blocks/${f.block.id}">${f.block.name}</a></td>
           <td>${roomLabel} · ${f.area}м²</td>
           <td>${f.floor} эт.</td>
-          <td style="text-align:right;font-weight:600">${(f.currentPrice / 1_000_000).toFixed(1)} млн ₽</td>
-          <td style="text-align:right;color:var(--text-3)">${f.meterPrice.toLocaleString("ru-RU")} ₽/м²</td>
+          <td style="text-align:right;font-weight:600">${(effPrice / 1_000_000).toFixed(1)} млн ₽</td>
+          <td style="text-align:right;color:var(--text-3)">${effMeter.toLocaleString("ru-RU")} ₽/м²</td>
         </tr>`;
       })
       .join("");

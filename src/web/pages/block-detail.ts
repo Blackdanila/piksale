@@ -109,8 +109,12 @@ export async function blockDetailPage(
   const tableRows = flats
     .map((flat) => {
       const roomLabel = flat.rooms === 0 ? "Студия" : `${flat.rooms}-комн`;
-      const price = flat.currentPrice.toLocaleString("ru-RU");
-      const meterPrice = flat.meterPrice.toLocaleString("ru-RU");
+      const effPrice = flat.benefitPrice ?? flat.currentPrice;
+      const effMeter = flat.benefitMeterPrice ?? flat.meterPrice;
+      const price = effPrice.toLocaleString("ru-RU");
+      const meterPrice = effMeter.toLocaleString("ru-RU");
+      const hasDisc = flat.benefitPrice != null && flat.benefitPrice < flat.currentPrice;
+      const discPct = hasDisc ? Math.round((1 - flat.benefitPrice! / flat.currentPrice) * 100) : 0;
       const pikUrl = flat.url?.startsWith("http") ? flat.url : flat.url ? `https://www.pik.ru${flat.url}` : null;
       const linkCell = pikUrl
         ? `<a href="${pikUrl}" target="_blank" rel="noopener" style="font-size:12px">pik.ru →</a>`
@@ -125,6 +129,10 @@ export async function blockDetailPage(
         ? `<img src="${planThumb}" alt="" style="width:64px;height:64px;object-fit:contain;border-radius:4px;background:#fff;vertical-align:middle" loading="lazy">`
         : `<span style="color:var(--text-3);font-size:20px">—</span>`;
 
+      const priceCell = hasDisc
+        ? `${price} ₽ <span style="text-decoration:line-through;color:var(--text-3);font-size:12px">${flat.currentPrice.toLocaleString("ru-RU")}</span> <span class="badge badge-green" style="font-size:11px">-${discPct}%</span>`
+        : `${price} ₽`;
+
       return `<tr>
         <td style="width:72px;padding:6px 8px"><a href="/flats/${flat.id}">${planCell}</a></td>
         <td><a href="/flats/${flat.id}">${roomLabel}</a></td>
@@ -132,7 +140,7 @@ export async function blockDetailPage(
         <td>${flat.floor}</td>
         <td${flat.bulkName ? "" : ' style="color:var(--text-3)"'}>${flat.bulkName ?? "—"}</td>
         <td style="color:var(--text-2)">${settlement}</td>
-        <td style="font-weight:600">${price} ₽</td>
+        <td style="font-weight:600">${priceCell}</td>
         <td style="color:var(--text-2)">${meterPrice} ₽/м²</td>
         <td>${linkCell}</td>
       </tr>`;

@@ -24,22 +24,33 @@ export async function flatDetailPage(flatId: number): Promise<string> {
   const pikUrl = flat.url?.startsWith("http") ? flat.url : flat.url ? `https://www.pik.ru${flat.url}` : null;
   const isGone = flat.status === "gone" || flat.status === "sold";
 
+  // Effective price: benefitPrice if available, otherwise currentPrice
+  const effectivePrice = flat.benefitPrice ?? flat.currentPrice;
+  const effectiveMeter = flat.benefitMeterPrice ?? flat.meterPrice;
+  const hasDiscount = flat.benefitPrice != null && flat.benefitPrice < flat.currentPrice;
+  const discountPct = hasDiscount ? Math.round((1 - flat.benefitPrice! / flat.currentPrice) * 100) : 0;
+
   const historyRows = history
     .map((snap, i) => {
       const date = snap.date.toLocaleDateString("ru-RU", {
         day: "2-digit",
         month: "2-digit",
         year: "2-digit",
+        timeZone: "Europe/Moscow",
       });
-      const price = snap.price.toLocaleString("ru-RU");
-      const meter = snap.meterPrice.toLocaleString("ru-RU");
+      const snapEffective = snap.benefitPrice ?? snap.price;
+      const snapMeter = snap.benefitMeterPrice ?? snap.meterPrice;
+      const price = snapEffective.toLocaleString("ru-RU");
+      const meter = snapMeter.toLocaleString("ru-RU");
+      const snapHasDiscount = snap.benefitPrice != null && snap.benefitPrice < snap.price;
 
       let changeHtml = '<span class="price-same">——</span>';
       if (i < history.length - 1) {
         const prev = history[i + 1];
-        if (snap.price !== prev.price) {
-          const pct = (((snap.price - prev.price) / prev.price) * 100).toFixed(1);
-          const diff = snap.price - prev.price;
+        const prevEffective = prev.benefitPrice ?? prev.price;
+        if (snapEffective !== prevEffective) {
+          const pct = (((snapEffective - prevEffective) / prevEffective) * 100).toFixed(1);
+          const diff = snapEffective - prevEffective;
           const cls = diff > 0 ? "price-up" : "price-down";
           const sign = diff > 0 ? "+" : "";
           changeHtml = `<span class="${cls}">${sign}${pct}%</span>`;
@@ -48,20 +59,22 @@ export async function flatDetailPage(flatId: number): Promise<string> {
 
       return `<tr>
         <td>${date}</td>
-        <td style="text-align:right;font-weight:500">${price} ₽</td>
+        <td style="text-align:right;font-weight:500">${price} ₽${snapHasDiscount ? ` <span style="text-decoration:line-through;color:var(--text-3);font-size:12px">${snap.price.toLocaleString("ru-RU")}</span>` : ""}</td>
         <td style="text-align:right;color:var(--text-2)">${meter} ₽/м²</td>
         <td style="text-align:right">${changeHtml}</td>
       </tr>`;
     })
     .join("");
 
-  // Calculate overall trend
+  // Calculate overall trend (using effective prices)
   let trendHtml = "";
   if (history.length >= 2) {
     const newest = history[0];
     const oldest = history[history.length - 1];
-    const pct = (((newest.price - oldest.price) / oldest.price) * 100).toFixed(1);
-    const diff = newest.price - oldest.price;
+    const newestEff = newest.benefitPrice ?? newest.price;
+    const oldestEff = oldest.benefitPrice ?? oldest.price;
+    const pct = (((newestEff - oldestEff) / oldestEff) * 100).toFixed(1);
+    const diff = newestEff - oldestEff;
     const cls = diff > 0 ? "price-up" : diff < 0 ? "price-down" : "price-same";
     const sign = diff > 0 ? "+" : "";
     trendHtml = `<span class="${cls}" style="font-size:16px;font-weight:600">${sign}${pct}% за всё время</span>`;
@@ -70,7 +83,7 @@ export async function flatDetailPage(flatId: number): Promise<string> {
   const stats = await getHeaderStats();
 
   const seo: SeoMeta = {
-    description: `${roomLabel} квартира ${flat.area}м² в ЖК ${flat.block.name}, ${flat.block.location.name}. ${flat.floor} этаж. Цена ${flat.currentPrice.toLocaleString("ru-RU")} ₽.`,
+    description: `${roomLabel} квартира ${flat.area}м² в ЖК ${flat.block.name}, ${flat.block.location.name}. ${flat.floor} этаж. Цена ${effectivePrice.toLocaleString("ru-RU")} ₽.`,
     keywords: `${flat.block.name}, ${roomLabel}, квартира, ПИК, ${flat.block.location.name}, планировка`,
     ogImage: flat.planRender ?? flat.block.imgUrl ?? undefined,
     canonical: `https://piksale.ru/flats/${flatId}`,
@@ -94,7 +107,7 @@ export async function flatDetailPage(flatId: number): Promise<string> {
       <span style="font-size:20px">🚫</span>
       <div>
         <div style="font-weight:600;color:var(--red)">Нет в продаже</div>
-        <div style="font-size:13px;color:var(--text-2)">Квартира больше не доступна — возможно, продана. Последняя известная цена: ${flat.currentPrice.toLocaleString("ru-RU")} ₽</div>
+        <div style="font-size:13px;color:var(--text-2)">Квартира больше не доступна — возможно, продана. Последняя известная цена: ${effectivePrice.toLocaleString("ru-RU")} ₽</div>
       </div>
     </div>` : ""}
 
@@ -115,11 +128,12 @@ export async function flatDetailPage(flatId: number): Promise<string> {
         <div class="stat-label">Этаж</div>
       </div>
       <div class="stat">
-        <div class="stat-value">${flat.currentPrice.toLocaleString("ru-RU")} ₽</div>
-        <div class="stat-label">Текущая цена</div>
+        <div class="stat-value">${effectivePrice.toLocaleString("ru-RU")} ₽</div>
+        ${hasDiscount ? `<div style="margin-top:4px"><span style="text-decoration:line-through;color:var(--text-3);font-size:13px">${flat.currentPrice.toLocaleString("ru-RU")} ₽</span> <span class="badge badge-green">-${discountPct}%</span></div>` : ""}
+        <div class="stat-label">Цена</div>
       </div>
       <div class="stat">
-        <div class="stat-value">${flat.meterPrice.toLocaleString("ru-RU")} ₽</div>
+        <div class="stat-value">${effectiveMeter.toLocaleString("ru-RU")} ₽</div>
         <div class="stat-label">Цена за м²</div>
       </div>
       ${flat.settlementDate ? `<div class="stat">

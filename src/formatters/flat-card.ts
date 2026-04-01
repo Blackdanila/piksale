@@ -17,6 +17,8 @@ export function formatFlatCard(
   prevPrice?: number,
 ): string {
   const lines: string[] = [];
+  const effPrice = flat.benefitPrice ?? flat.currentPrice;
+  const effMeter = flat.benefitMeterPrice ?? flat.meterPrice;
 
   const bulkInfo = flat.bulkName ? ` · корп. ${flat.bulkName}` : "";
   lines.push(`🏠 ${flat.block.name}${bulkInfo}`);
@@ -24,11 +26,15 @@ export function formatFlatCard(
     `${formatRooms(flat.rooms)} · ${formatArea(flat.area)} · ${flat.floor} эт.${flat.number ? ` · кв.${flat.number}` : ""}`,
   );
   lines.push(
-    `💰 ${formatPriceExact(flat.currentPrice)} (${formatMeterPriceExact(flat.meterPrice)})`,
+    `💰 ${formatPriceExact(effPrice)} (${formatMeterPriceExact(effMeter)})`,
   );
 
-  if (prevPrice && prevPrice !== flat.currentPrice) {
-    lines.push(`${formatPercent(prevPrice, flat.currentPrice)} за месяц`);
+  if (flat.benefitPrice != null && flat.benefitPrice < flat.currentPrice) {
+    lines.push(`🏷 Скидка: ${formatPriceExact(flat.currentPrice)} → ${formatPriceExact(flat.benefitPrice)}`);
+  }
+
+  if (prevPrice && prevPrice !== effPrice) {
+    lines.push(`${formatPercent(prevPrice, effPrice)} за месяц`);
   }
 
   return lines.join("\n");
@@ -38,11 +44,13 @@ export function formatFlatListItem(
   flat: FlatWithBlock,
   index: number,
 ): string {
+  const effPrice = flat.benefitPrice ?? flat.currentPrice;
+  const effMeter = flat.benefitMeterPrice ?? flat.meterPrice;
   const price =
-    flat.currentPrice >= 1_000_000
-      ? `${(flat.currentPrice / 1_000_000).toFixed(1)} млн ₽`
-      : `${flat.currentPrice.toLocaleString("ru-RU")} ₽`;
-  const meterPrice = `${Math.round(flat.meterPrice / 1000)}к/м²`;
+    effPrice >= 1_000_000
+      ? `${(effPrice / 1_000_000).toFixed(1)} млн ₽`
+      : `${effPrice.toLocaleString("ru-RU")} ₽`;
+  const meterPrice = `${Math.round(effMeter / 1000)}к/м²`;
 
   return `${index}. ${flat.block.name} · ${formatArea(flat.area)} · ${flat.floor} эт.\n   💰 ${price} · ${meterPrice}`;
 }
@@ -51,13 +59,14 @@ export function formatPriceChangeNotification(
   flat: FlatWithBlock,
   oldPrice: number,
 ): string {
+  const effPrice = flat.benefitPrice ?? flat.currentPrice;
   const bulkInfo = flat.bulkName ? ` · корп. ${flat.bulkName}` : "";
   return [
     `🔔 Изменение цены!`,
     ``,
     `🏠 ${flat.block.name}${bulkInfo}`,
     `${formatRooms(flat.rooms)} · ${formatArea(flat.area)} · ${flat.floor} эт.${flat.number ? ` · кв.${flat.number}` : ""}`,
-    `💰 ${formatPriceExact(oldPrice)} → ${formatPriceExact(flat.currentPrice)}`,
-    `${formatPercent(oldPrice, flat.currentPrice)} (${formatPriceDiff(oldPrice, flat.currentPrice)})`,
+    `💰 ${formatPriceExact(oldPrice)} → ${formatPriceExact(effPrice)}`,
+    `${formatPercent(oldPrice, effPrice)} (${formatPriceDiff(oldPrice, effPrice)})`,
   ].join("\n");
 }

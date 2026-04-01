@@ -108,6 +108,22 @@ export async function syncFlatsForBlock(blockId: number): Promise<PriceChange[]>
       where: { id: raw.id },
     });
 
+    // Extract benefitPrice from benefits (first available)
+    let benefitPrice: number | null = null;
+    let benefitMeterPrice: number | null = null;
+    if (raw.benefits) {
+      for (const items of Object.values(raw.benefits)) {
+        for (const b of items) {
+          if (b.benefitPrice) {
+            benefitPrice = b.benefitPrice;
+            benefitMeterPrice = b.priceMeter ?? null;
+            break;
+          }
+        }
+        if (benefitPrice) break;
+      }
+    }
+
     const flatData = {
       blockId: raw.block_id ?? blockId,
       bulkId: raw.bulk_id ?? null,
@@ -119,6 +135,8 @@ export async function syncFlatsForBlock(blockId: number): Promise<PriceChange[]>
       status: raw.status ?? "free",
       currentPrice: raw.price,
       meterPrice: raw.meterPrice ?? raw.meter_price ?? 0,
+      benefitPrice,
+      benefitMeterPrice,
       url: raw.url ?? null,
       planSvg: raw.layout?.flat_plan_svg ?? null,
       planRender: raw.layout?.flat_plan_render ?? null,
@@ -131,9 +149,11 @@ export async function syncFlatsForBlock(blockId: number): Promise<PriceChange[]>
       create: { id: raw.id, ...flatData },
     });
 
-    // Record price snapshot if price changed or first time
+    // Record price snapshot if any price changed or first time
     const shouldSnapshot =
-      !existing || existing.currentPrice !== raw.price;
+      !existing ||
+      existing.currentPrice !== raw.price ||
+      existing.benefitPrice !== benefitPrice;
 
     if (shouldSnapshot) {
       await prisma.priceSnapshot.create({
@@ -141,15 +161,20 @@ export async function syncFlatsForBlock(blockId: number): Promise<PriceChange[]>
           flatId: raw.id,
           price: raw.price,
           meterPrice: raw.meterPrice ?? raw.meter_price ?? 0,
+          benefitPrice,
+          benefitMeterPrice,
         },
       });
 
-      if (existing && existing.currentPrice !== raw.price) {
+      // Notify on effective price change (benefitPrice or fallback to price)
+      const oldEffective = existing?.benefitPrice ?? existing?.currentPrice;
+      const newEffective = benefitPrice ?? raw.price;
+      if (existing && oldEffective && oldEffective !== newEffective) {
         changes.push({
           flatId: raw.id,
           blockId,
-          oldPrice: existing.currentPrice,
-          newPrice: raw.price,
+          oldPrice: oldEffective,
+          newPrice: newEffective,
           rooms: raw.rooms ?? null,
         });
       }
