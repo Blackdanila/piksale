@@ -7,8 +7,8 @@ import { formatPriceChangeNotification } from "./formatters/flat-card.js";
 import { InlineKeyboard } from "grammy";
 
 export function startScheduler(bot: Bot<Context>) {
-  // Run daily at 06:00 MSK (03:00 UTC)
-  cron.schedule("0 3 * * *", async () => {
+  // Run daily at 08:00 MSK (05:00 UTC)
+  cron.schedule("0 5 * * *", async () => {
     console.log("Scheduled collection started");
 
     try {
@@ -24,7 +24,7 @@ export function startScheduler(bot: Bot<Context>) {
     }
   });
 
-  console.log("Scheduler started: daily at 06:00 MSK");
+  console.log("Scheduler started: daily at 08:00 MSK");
 }
 
 interface PriceChange {
