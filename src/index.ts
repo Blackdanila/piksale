@@ -1,4 +1,12 @@
 import "dotenv/config";
+import { lookup } from "node:dns";
+
+// Force undici (fetch) to use dns.lookup which respects /etc/hosts
+// Without this, it uses dns.resolve which bypasses extra_hosts for api.telegram.org
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Agent, setGlobalDispatcher } = require("undici");
+setGlobalDispatcher(new Agent({ connect: { lookup } }));
+
 import { serve } from "@hono/node-server";
 import { createBot } from "./bot/index.js";
 import { createWebApp } from "./web/server.js";
