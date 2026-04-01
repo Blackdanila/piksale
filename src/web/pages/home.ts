@@ -193,41 +193,47 @@ export async function homePage(): Promise<string> {
     </div>`;
   }
 
-  // --- Sold yesterday ---
+  // --- Sold last week ---
   const now = new Date();
   const mskOffset = 3 * 60 * 60 * 1000;
   const mskNow = new Date(now.getTime() + mskOffset);
   const mskTodayStart = new Date(Date.UTC(mskNow.getUTCFullYear(), mskNow.getUTCMonth(), mskNow.getUTCDate()) - mskOffset);
-  const mskYesterdayStart = new Date(mskTodayStart.getTime() - 86400000);
+  const mskWeekAgo = new Date(mskTodayStart.getTime() - 7 * 86400000);
 
-  const soldYesterday = await prisma.flat.findMany({
+  const soldLastWeek = await prisma.flat.findMany({
     where: {
       status: "sold",
-      updatedAt: { gte: mskYesterdayStart, lt: mskTodayStart },
+      updatedAt: { gte: mskWeekAgo },
     },
     include: { block: { select: { name: true, id: true } } },
-    orderBy: { currentPrice: "desc" },
-    take: 20,
+    orderBy: { updatedAt: "desc" },
+    take: 30,
   });
 
   let soldHtml = "";
-  if (soldYesterday.length > 0) {
-    const soldRows = soldYesterday
+  if (soldLastWeek.length > 0) {
+    const soldRows = soldLastWeek
       .map((f) => {
         const roomLabel = f.rooms === 0 ? "Студия" : `${f.rooms}-комн`;
+        const soldDate = f.updatedAt.toLocaleDateString("ru-RU", {
+          day: "2-digit",
+          month: "2-digit",
+          timeZone: "Europe/Moscow",
+        });
         return `<tr>
           <td><a href="/blocks/${f.block.id}">${f.block.name}</a></td>
           <td>${roomLabel} · ${f.area}м²</td>
           <td>${f.floor} эт.</td>
           <td style="text-align:right;font-weight:600">${(f.currentPrice / 1_000_000).toFixed(1)} млн ₽</td>
           <td style="text-align:right;color:var(--text-3)">${f.meterPrice.toLocaleString("ru-RU")} ₽/м²</td>
+          <td style="text-align:right;color:var(--text-3)">${soldDate}</td>
         </tr>`;
       })
       .join("");
 
     soldHtml = `
-    <h2 class="page-title" style="font-size:22px;margin-top:40px">🏷️ Продано вчера</h2>
-    <p class="page-subtitle">Квартиры, проданные за вчерашний день</p>
+    <h2 class="page-title" style="font-size:22px;margin-top:40px">🏷️ Продано за неделю</h2>
+    <p class="page-subtitle">Квартиры, проданные за последние 7 дней</p>
     <div class="table-wrap" style="margin-bottom:32px">
       <table>
         <thead>
@@ -237,6 +243,7 @@ export async function homePage(): Promise<string> {
             <th>Этаж</th>
             <th style="text-align:right">Цена</th>
             <th style="text-align:right">За м²</th>
+            <th style="text-align:right">Дата</th>
           </tr>
         </thead>
         <tbody>${soldRows}</tbody>
