@@ -36,10 +36,14 @@ export async function handleCallback(ctx: Context) {
   }
 
   try {
+    // Answer callback early to prevent Telegram timeout
+    await ctx.answerCallbackQuery();
+    const t = Date.now();
     await routeCallback(ctx, data);
+    const elapsed = Date.now() - t;
+    if (elapsed > 1000) console.warn(`Slow callback "${data}": ${elapsed}ms`);
   } catch (err) {
     console.error(`Callback error for "${data}":`, err);
-    await ctx.answerCallbackQuery("Произошла ошибка. Попробуйте снова.");
   }
 }
 
