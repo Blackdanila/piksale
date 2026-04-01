@@ -1,29 +1,50 @@
 import type { Context } from "grammy";
 import { InlineKeyboard } from "grammy";
-import { searchFlats, getLocations, type FlatFilter } from "../../db/queries.js";
+import { searchFlats, type FlatFilter } from "../../db/queries.js";
 import { formatFlatListItem } from "../../formatters/flat-card.js";
-import { locationKeyboard, paginationKeyboard, flatCardKeyboard } from "../keyboards.js";
+
+// Hardcoded locations — they almost never change
+const LOCATIONS = [
+  { id: 2, name: "Москва и МО" },
+  { id: 81, name: "СПб и ЛО" },
+  { id: 83, name: "Екатеринбург" },
+  { id: 84, name: "Тюмень" },
+  { id: 52, name: "Владивосток" },
+  { id: 49, name: "Хабаровск" },
+  { id: 24, name: "Н. Новгород" },
+  { id: 25, name: "Новороссийск" },
+  { id: 27, name: "Ярославль" },
+  { id: 22, name: "Обнинск" },
+  { id: 91, name: "Южно-Сахалинск" },
+  { id: 92, name: "Казань" },
+  { id: 93, name: "Благовещенск" },
+  { id: 94, name: "Улан-Удэ" },
+];
 
 // In-memory filter state per chat
 const filterState = new Map<
   number,
-  { locationId?: number; filter: FlatFilter; step: string }
+  { filter: FlatFilter; step: string }
 >();
 
 export async function handleSearch(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  const locations = await getLocations();
-  if (locations.length === 0) {
-    await ctx.reply("Данные ещё не загружены. Попробуйте позже.");
-    return;
+  filterState.set(chatId, { filter: {}, step: "location" });
+
+  const kb = new InlineKeyboard();
+  for (let i = 0; i < LOCATIONS.length; i++) {
+    kb.text(LOCATIONS[i].name, `search:loc:${LOCATIONS[i].id}`);
+    if ((i + 1) % 3 === 0) kb.row();
   }
 
-  filterState.set(chatId, { filter: {}, step: "location" });
-  await ctx.reply("🔍 Выберите город для поиска:", {
-    reply_markup: locationKeyboard(locations, "search"),
-  });
+  const msg = "🔍 Выберите город для поиска:";
+  if (ctx.callbackQuery) {
+    await ctx.editMessageText(msg, { reply_markup: kb });
+  } else {
+    await ctx.reply(msg, { reply_markup: kb });
+  }
 }
 
 export async function handleSearchLocationSelect(
@@ -34,7 +55,6 @@ export async function handleSearchLocationSelect(
   if (!chatId) return;
 
   const state = filterState.get(chatId) ?? { filter: {}, step: "rooms" };
-  state.locationId = locationId;
   state.filter.locationId = locationId;
   state.step = "rooms";
   filterState.set(chatId, state);
@@ -51,7 +71,6 @@ export async function handleSearchLocationSelect(
     .text("← Назад", "search:back");
 
   await ctx.editMessageText("🛏 Количество комнат:", { reply_markup: kb });
-  await ctx.answerCallbackQuery();
 }
 
 export async function handleSearchRoomsSelect(
@@ -83,7 +102,6 @@ export async function handleSearchRoomsSelect(
     .text("← Назад", "search:back:rooms");
 
   await ctx.editMessageText("💰 Бюджет:", { reply_markup: kb });
-  await ctx.answerCallbackQuery();
 }
 
 export async function handleSearchPriceSelect(
@@ -102,7 +120,7 @@ export async function handleSearchPriceSelect(
     if (max) state.filter.priceMax = max;
   }
 
-  // Execute search
+  // Single DB query here
   await executeSearch(ctx, state.filter, 1);
 }
 
@@ -121,7 +139,6 @@ export async function executeSearch(
     const text = "🔍 Ничего не найдено по заданным фильтрам.";
     if (ctx.callbackQuery) {
       await ctx.editMessageText(text, { reply_markup: kb });
-      await ctx.answerCallbackQuery();
     } else {
       await ctx.reply(text, { reply_markup: kb });
     }
@@ -152,7 +169,6 @@ export async function executeSearch(
 
   if (ctx.callbackQuery) {
     await ctx.editMessageText(text, { reply_markup: kb });
-    await ctx.answerCallbackQuery();
   } else {
     await ctx.reply(text, { reply_markup: kb });
   }
@@ -171,7 +187,7 @@ export async function handleSearchResultPage(ctx: Context, page: number) {
 
   const state = filterState.get(chatId);
   if (!state) {
-    await ctx.answerCallbackQuery("Начните новый поиск");
+    await ctx.reply("Начните новый поиск");
     return;
   }
 
