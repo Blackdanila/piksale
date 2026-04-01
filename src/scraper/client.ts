@@ -101,21 +101,21 @@ export async function fetchBlockImageFromPage(pikPath: string): Promise<string |
   try {
     const url = `https://www.pik.ru${pikPath}`;
     const res = await fetch(url, {
-      headers: { "User-Agent": "PIKsale/1.0" },
+      headers: { "User-Agent": "Mozilla/5.0" },
     });
     if (!res.ok) return null;
     const html = await res.text();
-    // Prefer 686x (mobile-size) renders from db-estate CDN
+    // Prefer new CDN (content.storage-cdn.ru) block images
+    const matchNew = html.match(/https:\/\/content\.storage-cdn\.ru\/strapi\/block\/[^"\s]+\.(jpg|png|webp)/);
+    if (matchNew) return matchNew[0];
+    // Legacy: db-estate CDN
     const matchMobile = html.match(/https:\/\/\d+\.db-estate\.cdn\.pik-service\.ru\/block\/[^"\s]*686x[^"\s]*\.(jpg|png|webp)/);
     if (matchMobile) return matchMobile[0];
     const match1 = html.match(/https:\/\/\d+\.db-estate\.cdn\.pik-service\.ru\/block\/[^"\s]+\.(jpg|png|webp)/);
     if (match1) return match1[0];
-    // Then try cdn.pik.ru slider images
+    // cdn.pik.ru slider images
     const match2 = html.match(/https:\/\/cdn\.pik\.ru\/content\/slider\/[^"\s]+\.(jpg|png|webp)/);
     if (match2) return match2[0];
-    // Any content CDN image
-    const match3 = html.match(/https:\/\/content\.cdn\.pik-service\.ru\/[^"\s]+\.(jpg|png|webp)/);
-    if (match3) return match3[0];
     return null;
   } catch {
     return null;
