@@ -61,16 +61,19 @@ export async function syncBlocks() {
       imgUrl = await fetchBlockImageFromPage(block.url);
     }
 
+    const updateData: Record<string, unknown> = {
+      name: block.name,
+      slug: blockSlug,
+      address: block.address ?? null,
+      lat,
+      lng,
+    };
+    // Only update imgUrl if we found a new one — don't overwrite existing with null
+    if (imgUrl) updateData.imgUrl = imgUrl;
+
     await prisma.block.upsert({
       where: { id: block.id },
-      update: {
-        name: block.name,
-        slug: blockSlug,
-        address: block.address ?? null,
-        imgUrl,
-        lat,
-        lng,
-      },
+      update: updateData,
       create: {
         id: block.id,
         name: block.name,
