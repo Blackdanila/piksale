@@ -1,11 +1,32 @@
 import "dotenv/config";
-import { lookup } from "node:dns";
+import dns from "node:dns";
 
-// Force undici (fetch) to use dns.lookup which respects /etc/hosts
-// Without this, it uses dns.resolve which bypasses extra_hosts for api.telegram.org
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { Agent, setGlobalDispatcher } = require("undici");
-setGlobalDispatcher(new Agent({ connect: { lookup } }));
+// Patch dns.resolve4/resolve6 to check /etc/hosts first (for Docker extra_hosts)
+// Node.js fetch (undici) uses dns.resolve which bypasses /etc/hosts
+const hostsMap: Record<string, string> = {};
+try {
+  const fs = require("node:fs");
+  const hostsFile = fs.readFileSync("/etc/hosts", "utf8");
+  for (const line of hostsFile.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const parts = trimmed.split(/\s+/);
+    if (parts.length >= 2) {
+      for (let i = 1; i < parts.length; i++) {
+        hostsMap[parts[i]] = parts[0];
+      }
+    }
+  }
+} catch {}
+
+const origResolve4 = dns.resolve4;
+(dns as any).resolve4 = function(hostname: string, optionsOrCb: any, maybeCb?: any) {
+  const cb = typeof maybeCb === "function" ? maybeCb : typeof optionsOrCb === "function" ? optionsOrCb : null;
+  if (hostsMap[hostname] && cb) {
+    return cb(null, [hostsMap[hostname]]);
+  }
+  return origResolve4.call(dns, hostname, optionsOrCb, maybeCb);
+};
 
 import { serve } from "@hono/node-server";
 import { createBot } from "./bot/index.js";
