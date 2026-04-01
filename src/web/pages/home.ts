@@ -202,7 +202,7 @@ export async function homePage(): Promise<string> {
 
   const soldLastWeek = await prisma.flat.findMany({
     where: {
-      status: "sold",
+      status: "gone",
       updatedAt: { gte: mskWeekAgo },
     },
     include: { block: { select: { name: true, id: true } } },
