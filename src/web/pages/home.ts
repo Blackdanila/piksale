@@ -207,15 +207,15 @@ export async function homePage(): Promise<string> {
     },
     include: { block: { select: { name: true, id: true } } },
     orderBy: { currentPrice: "desc" },
-    take: 20,
   });
 
   let soldHtml = "";
   if (soldYesterday.length > 0) {
     const soldRows = soldYesterday
-      .map((f) => {
+      .map((f, i) => {
         const roomLabel = f.rooms === 0 ? "Студия" : `${f.rooms}-комн`;
-        return `<tr>
+        const hidden = i >= 10 ? ' class="sold-hidden" style="display:none"' : "";
+        return `<tr${hidden}>
           <td><a href="/blocks/${f.block.id}">${f.block.name}</a></td>
           <td>${roomLabel} · ${f.area}м²</td>
           <td>${f.floor} эт.</td>
@@ -225,8 +225,16 @@ export async function homePage(): Promise<string> {
       })
       .join("");
 
+    const showMoreBtn = soldYesterday.length > 10
+      ? `<div style="text-align:center;padding:12px">
+          <button class="btn btn-ghost" id="sold-more" onclick="document.querySelectorAll('.sold-hidden').forEach(r=>r.style.display='');this.remove()">
+            Показать все ${soldYesterday.length}
+          </button>
+        </div>`
+      : "";
+
     soldHtml = `
-    <h2 class="page-title" style="font-size:22px;margin-top:40px">🏷️ Продано вчера</h2>
+    <h2 class="page-title" style="font-size:22px;margin-top:40px">🏷️ Продано вчера <span style="font-size:16px;color:var(--text-3);font-weight:400">${soldYesterday.length} кв.</span></h2>
     <p class="page-subtitle">Квартиры, проданные за вчерашний день</p>
     <div class="table-wrap" style="margin-bottom:32px">
       <table>
@@ -241,6 +249,7 @@ export async function homePage(): Promise<string> {
         </thead>
         <tbody>${soldRows}</tbody>
       </table>
+      ${showMoreBtn}
     </div>`;
   }
 
