@@ -54,6 +54,7 @@ model Flat {
   @@index([blockId, status])
   @@index([status, currentPrice])
   @@index([status, rooms])
+  @@index([status, updatedAt])
   @@index([blockId])
   @@index([rooms])
   @@index([status])

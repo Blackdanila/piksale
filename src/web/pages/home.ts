@@ -253,6 +253,56 @@ export async function homePage(): Promise<string> {
     </div>`;
   }
 
+  // --- Top blocks by sales last week ---
+  const mskWeekAgo = new Date(mskTodayStart.getTime() - 7 * 86400000);
+  const topBlocks = await prisma.$queryRaw<
+    Array<{ block_id: number; block_name: string; sold_count: bigint; avg_price: bigint; location_name: string }>
+  >`
+    SELECT f."blockId" as block_id, b.name as block_name, l.name as location_name,
+           COUNT(*)::bigint as sold_count,
+           AVG(f."currentPrice")::bigint as avg_price
+    FROM "Flat" f
+    JOIN "Block" b ON b.id = f."blockId"
+    JOIN "Location" l ON l.id = b."locationId"
+    WHERE f.status = 'gone'
+      AND f."updatedAt" >= ${mskWeekAgo}
+      AND f."updatedAt" < ${mskTodayStart}
+    GROUP BY f."blockId", b.name, l.name
+    ORDER BY sold_count DESC
+    LIMIT 10
+  `;
+
+  let topBlocksHtml = "";
+  if (topBlocks.length > 0) {
+    const topRows = topBlocks
+      .map((b, i) => {
+        return `<tr>
+          <td style="font-weight:600;color:var(--text-3)">${i + 1}</td>
+          <td><a href="/blocks/${b.block_id}">${b.block_name}</a><span style="color:var(--text-3);font-size:12px;margin-left:6px">${b.location_name}</span></td>
+          <td style="text-align:right;font-weight:600">${Number(b.sold_count)}</td>
+          <td style="text-align:right;color:var(--text-2)">${(Number(b.avg_price) / 1_000_000).toFixed(1)} млн ₽</td>
+        </tr>`;
+      })
+      .join("");
+
+    topBlocksHtml = `
+    <h2 class="page-title" style="font-size:22px;margin-top:40px">🏆 Топ ЖК по продажам за неделю</h2>
+    <p class="page-subtitle">В каких ЖК продано больше всего квартир</p>
+    <div class="table-wrap" style="margin-bottom:32px">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th>ЖК</th>
+            <th style="text-align:right">Продано</th>
+            <th style="text-align:right">Ср. цена</th>
+          </tr>
+        </thead>
+        <tbody>${topRows}</tbody>
+      </table>
+    </div>`;
+  }
+
   const stats = await getHeaderStats();
 
   const seo: SeoMeta = {
@@ -281,6 +331,8 @@ export async function homePage(): Promise<string> {
     </div>
 
     ${dropsHtml}
+
+    ${topBlocksHtml}
 
     ${soldHtml}
   `,
