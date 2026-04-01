@@ -41,7 +41,7 @@ export async function handleSearch(ctx: Context) {
 
   const msg = "🔍 Выберите город для поиска:";
   if (ctx.callbackQuery) {
-    await ctx.editMessageText(msg, { reply_markup: kb });
+    await ctx.editMessageText(msg, { reply_markup: kb }).catch(() => {});
   } else {
     await ctx.reply(msg, { reply_markup: kb });
   }
@@ -70,7 +70,7 @@ export async function handleSearchLocationSelect(
     .row()
     .text("← Назад", "search:back");
 
-  await ctx.editMessageText("🛏 Количество комнат:", { reply_markup: kb });
+  await ctx.editMessageText("🛏 Количество комнат:", { reply_markup: kb }).catch(() => {});
 }
 
 export async function handleSearchRoomsSelect(
@@ -101,7 +101,7 @@ export async function handleSearchRoomsSelect(
     .row()
     .text("← Назад", "search:back:rooms");
 
-  await ctx.editMessageText("💰 Бюджет:", { reply_markup: kb });
+  await ctx.editMessageText("💰 Бюджет:", { reply_markup: kb }).catch(() => {});
 }
 
 export async function handleSearchPriceSelect(
@@ -138,7 +138,7 @@ export async function executeSearch(
     const kb = new InlineKeyboard().text("🔄 Изменить фильтры", "search:restart");
     const text = "🔍 Ничего не найдено по заданным фильтрам.";
     if (ctx.callbackQuery) {
-      await ctx.editMessageText(text, { reply_markup: kb });
+      await ctx.editMessageText(text, { reply_markup: kb }).catch(() => {});
     } else {
       await ctx.reply(text, { reply_markup: kb });
     }
@@ -168,7 +168,7 @@ export async function executeSearch(
   kb.text("🔄 Фильтры", "search:restart");
 
   if (ctx.callbackQuery) {
-    await ctx.editMessageText(text, { reply_markup: kb });
+    await ctx.editMessageText(text, { reply_markup: kb }).catch(() => {});
   } else {
     await ctx.reply(text, { reply_markup: kb });
   }
