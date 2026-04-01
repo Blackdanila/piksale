@@ -35,9 +35,10 @@ export async function handleCallback(ctx: Context) {
     return;
   }
 
+  // Answer callback early to prevent Telegram timeout (ignore errors for stale queries)
+  await ctx.answerCallbackQuery().catch(() => {});
+
   try {
-    // Answer callback early to prevent Telegram timeout
-    await ctx.answerCallbackQuery();
     const t = Date.now();
     await routeCallback(ctx, data);
     const elapsed = Date.now() - t;
