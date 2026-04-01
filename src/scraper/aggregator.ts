@@ -23,8 +23,8 @@ export async function computeDailyStats(blockId: number, date: Date) {
   if (allFlats.length === 0) return;
 
   const totalAll = allFlats.length;
-  const soldCount = allFlats.filter((f) => f.status === "sold").length;
-  const reservedCount = allFlats.filter((f) => f.status === "reserved").length;
+  const soldCount = allFlats.filter((f) => f.status === "sold" || f.status === "gone").length;
+  const reservedCount = allFlats.filter((f) => f.status === "reserved" || f.status === "reserve").length;
   const soldPercent = totalAll > 0 ? (soldCount / totalAll) * 100 : 0;
 
   // Free flats only for price stats

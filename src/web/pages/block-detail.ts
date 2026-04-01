@@ -55,7 +55,7 @@ export async function blockDetailPage(
       orderBy: { rooms: "asc" },
     }),
     prisma.flat.count({ where: { blockId } }),
-    prisma.flat.count({ where: { blockId, status: "sold" } }),
+    prisma.flat.count({ where: { blockId, status: { in: ["sold", "gone"] } } }),
   ]);
 
   const soldPercent = totalAllFlats > 0 ? ((soldFlats / totalAllFlats) * 100).toFixed(1) : "0";
