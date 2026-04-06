@@ -58,8 +58,10 @@ export async function homePage(): Promise<string> {
     FROM "BlockDailyStats"
     WHERE "avgMeterPrice" > 0
     GROUP BY date
-    ORDER BY date ASC
+    ORDER BY date DESC
+    LIMIT 10
   `;
+  trendData.reverse();
 
   let trendHtml = "";
   if (trendData.length >= 2) {
@@ -103,7 +105,7 @@ export async function homePage(): Promise<string> {
           <span class="${trendCls}" style="font-size:14px;font-weight:600">${trendSign}${pctChange}%</span>
         </div>
       </div>
-      <div style="display:flex;align-items:flex-end;gap:2px;height:110px;padding-top:10px;overflow-x:auto">
+      <div style="display:flex;align-items:flex-end;gap:2px;height:110px;padding-top:10px;overflow:hidden">
         ${bars}
       </div>
     </div>`;
