@@ -92,18 +92,18 @@ export async function homePage(): Promise<string> {
       .join("");
 
     trendHtml = `
-    <div class="card" style="margin:32px 0">
+    <div class="card" style="margin:32px 0;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-        <div>
+        <div style="min-width:0">
           <div style="font-size:18px;font-weight:600">${trendIcon} Динамика цен ПИК</div>
           <div style="font-size:13px;color:var(--text-3)">Средняя цена за м² по всем ЖК</div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:24px;font-weight:700">${lastPrice.toLocaleString("ru-RU")} ₽/м²</div>
+        <div style="text-align:right;min-width:0">
+          <div style="font-size:clamp(18px,5vw,24px);font-weight:700">${lastPrice.toLocaleString("ru-RU")} ₽/м²</div>
           <span class="${trendCls}" style="font-size:14px;font-weight:600">${trendSign}${pctChange}%</span>
         </div>
       </div>
-      <div style="display:flex;align-items:flex-end;gap:2px;height:110px;padding-top:10px">
+      <div style="display:flex;align-items:flex-end;gap:2px;height:110px;padding-top:10px;overflow-x:auto">
         ${bars}
       </div>
     </div>`;
