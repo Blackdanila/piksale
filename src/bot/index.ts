@@ -47,7 +47,7 @@ export function createBot(token: string, config?: Omit<BotConfig<Context>, "clie
 
 // Rejects if the call outlives the deadline. The underlying request is left to
 // die on its own; what matters is that the caller gets to retry.
-function withDeadline<T>(p: Promise<T>, ms: number): Promise<T> {
+export function withDeadline<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     p,
     new Promise<never>((_, rej) =>

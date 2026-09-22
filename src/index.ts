@@ -30,7 +30,7 @@ const origResolve4 = dns.resolve4;
 };
 
 import { serve } from "@hono/node-server";
-import { createBot, setupBotMenu } from "./bot/index.js";
+import { createBot, setupBotMenu, withDeadline } from "./bot/index.js";
 import { createWebApp } from "./web/server.js";
 import { startScheduler } from "./scheduler.js";
 import { warmupCache } from "./db/queries.js";
@@ -130,9 +130,11 @@ serve({ fetch: app.fetch, port: PORT }, () => {
   } else {
     // Long polling only needs the outbound direction. A webhook left registered
     // on Telegram's side makes getUpdates fail with 409, so clear it first.
-    bot.api
-      .deleteWebhook()
-      .catch((err) => console.error("deleteWebhook failed:", err))
+    // Give the call a deadline: a stuck request to Telegram can hang for
+    // minutes, and polling must not wait that long to begin. Failing here is
+    // harmless when no webhook is registered.
+    withDeadline(bot.api.deleteWebhook(), 10_000)
+      .catch((err) => console.warn("deleteWebhook skipped:", err.message ?? err))
       .then(() =>
         bot.start({
           onStart: () => console.log("Bot started (long polling)"),
