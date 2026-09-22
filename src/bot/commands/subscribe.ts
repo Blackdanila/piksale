@@ -11,9 +11,19 @@ export async function handleMyProjects(ctx: Context) {
   const chatId = BigInt(ctx.chat?.id ?? 0);
   const subs = await getUserSubscriptions(chatId);
 
+  // Refreshing after an unsubscribe edits the list in place instead of
+  // posting a fresh copy under it.
+  const send = async (text: string, kb?: InlineKeyboard) => {
+    if (ctx.callbackQuery) {
+      await ctx.editMessageText(text, { reply_markup: kb }).catch(() => {});
+    } else {
+      await ctx.reply(text, { reply_markup: kb });
+    }
+  };
+
   if (subs.length === 0) {
-    await ctx.reply(
-      "У вас пока нет подписок.\n\nИспользуйте 🔍 Поиск, чтобы найти ЖК и подписаться на изменения цен.",
+    await send(
+      "🔔 У вас пока нет подписок.\n\nНайдите ЖК через 🔍 Поиск или 🏢 Каталог ЖК и нажмите «Подписаться» — каждое утро буду присылать изменения цен.",
     );
     return;
   }
@@ -29,9 +39,9 @@ export async function handleMyProjects(ctx: Context) {
     if ((i + 1) % 3 === 0) kb.row();
   });
 
-  await ctx.reply(
-    `🏠 Ваши подписки:\n\n${lines.join("\n")}\n\nНажмите ❌ чтобы отписаться:`,
-    { reply_markup: kb },
+  await send(
+    `🔔 Ваши подписки:\n\n${lines.join("\n")}\n\nНажмите ❌ чтобы отписаться:`,
+    kb,
   );
 }
 

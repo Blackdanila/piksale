@@ -9,7 +9,7 @@ import {
   getBlock,
 } from "../../db/queries.js";
 import { prisma } from "../../db/prisma.js";
-import { locationKeyboard, dynamicsPeriodKeyboard, blockListKeyboard } from "../keyboards.js";
+import { locationKeyboard, dynamicsPeriodKeyboard } from "../keyboards.js";
 import { formatPriceTable, formatFlatPriceTable } from "../../formatters/price-table.js";
 import { formatRooms, formatArea } from "../../formatters/helpers.js";
 
@@ -20,12 +20,21 @@ export async function handleDynamics(ctx: Context) {
     return;
   }
 
-  await ctx.reply("📊 Выберите город для просмотра динамики:", {
-    reply_markup: locationKeyboard(locations, "dyn"),
-  });
+  const text = "📊 Выберите город для просмотра динамики:";
+  const kb = locationKeyboard(locations, "dyn");
+
+  if (ctx.callbackQuery) {
+    await ctx.editMessageText(text, { reply_markup: kb }).catch(() => {});
+  } else {
+    await ctx.reply(text, { reply_markup: kb });
+  }
 }
 
-export async function handleDynamicsLocationSelect(ctx: Context, locationId: number) {
+export async function handleDynamicsLocationSelect(
+  ctx: Context,
+  locationId: number,
+  page = 1,
+) {
   const blocks = await getBlocksByLocation(locationId);
   if (blocks.length === 0) {
     await ctx.answerCallbackQuery("Нет ЖК в этом городе");
@@ -38,30 +47,32 @@ export async function handleDynamicsLocationSelect(ctx: Context, locationId: num
 
   const BLOCKS_PER_PAGE = 5;
   const totalPages = Math.ceil(blocks.length / BLOCKS_PER_PAGE);
-  const pageBlocks = blocks.slice(0, BLOCKS_PER_PAGE);
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const offset = (safePage - 1) * BLOCKS_PER_PAGE;
+  const pageBlocks = blocks.slice(offset, offset + BLOCKS_PER_PAGE);
 
-  const lines = pageBlocks.map((b, i) => `${i + 1}. ${b.name}`);
-  const text = `📊 ${cityName} · динамика\n\nВыберите ЖК или смотрите общую::\n\n${lines.join("\n")}`;
+  const lines = pageBlocks.map((b, i) => `${offset + i + 1}. ${b.name}`);
+  const text = `📊 ${cityName} · динамика\n\nВыберите ЖК или смотрите сводную по городу:\n\n${lines.join("\n")}`;
 
   const kb = new InlineKeyboard()
     .text(`📊 Вся динамика ${cityName}`, `dynloc:${locationId}:30`)
     .row();
 
   pageBlocks.forEach((b, i) => {
-    kb.text(`${i + 1}`, `dyn:${locationId}:block:${b.id}`);
+    kb.text(`${offset + i + 1}`, `dyn:${locationId}:block:${b.id}`);
   });
   kb.row();
 
   if (totalPages > 1) {
-    kb.text(`Стр 1/${totalPages}`, "noop");
-    kb.text("След ▶", `dyn:${locationId}:page:2`);
+    if (safePage > 1) kb.text("◀ Пред", `dyn:${locationId}:page:${safePage - 1}`);
+    kb.text(`${safePage}/${totalPages}`, "noop");
+    if (safePage < totalPages) kb.text("След ▶", `dyn:${locationId}:page:${safePage + 1}`);
     kb.row();
   }
 
   kb.text("← Назад", "dyn:back");
 
-  await ctx.editMessageText(text, { reply_markup: kb });
-  await ctx.answerCallbackQuery();
+  await ctx.editMessageText(text, { reply_markup: kb }).catch(() => {});
 }
 
 export async function handleDynamicsCity(
@@ -126,14 +137,16 @@ export async function handleDynamicsCity(
     .row()
     .text("← К ЖК", `dyn:loc:${locationId}`);
 
-  await ctx.editMessageText(lines.join("\n"), { reply_markup: kb });
-  await ctx.answerCallbackQuery();
+  await ctx.editMessageText(lines.join("\n"), { reply_markup: kb }).catch(() => {});
 }
 
 export async function handleDynamicsBlockSelect(ctx: Context, blockId: number) {
+  const block = await getBlock(blockId);
   const kb = dynamicsPeriodKeyboard(blockId);
-  await ctx.editMessageText("📊 Выберите период:", { reply_markup: kb });
-  await ctx.answerCallbackQuery();
+  if (block) kb.row().text("← К списку ЖК", `dyn:loc:${block.locationId}`);
+  await ctx
+    .editMessageText(`📊 ${block?.name ?? "ЖК"} · выберите период:`, { reply_markup: kb })
+    .catch(() => {});
 }
 
 export async function handleDynamicsPeriod(
@@ -151,8 +164,8 @@ export async function handleDynamicsPeriod(
   const text = formatPriceTable(block.name, history);
 
   const kb = dynamicsPeriodKeyboard(blockId);
-  await ctx.editMessageText(text, { reply_markup: kb });
-  await ctx.answerCallbackQuery();
+  kb.row().text("← К списку ЖК", `dyn:loc:${block.locationId}`);
+  await ctx.editMessageText(text, { reply_markup: kb }).catch(() => {});
 }
 
 export async function handleFlatHistory(ctx: Context, flatId: number) {
@@ -166,6 +179,6 @@ export async function handleFlatHistory(ctx: Context, flatId: number) {
   const label = `${flat.block.name} · ${formatRooms(flat.rooms)} · ${formatArea(flat.area)}`;
   const text = formatFlatPriceTable(label, history);
 
-  await ctx.editMessageText(text);
-  await ctx.answerCallbackQuery();
+  const kb = new InlineKeyboard().text("← К квартире", `flat:view:${flatId}`);
+  await ctx.editMessageText(text, { reply_markup: kb }).catch(() => {});
 }

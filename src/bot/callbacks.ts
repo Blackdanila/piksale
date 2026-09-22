@@ -2,6 +2,7 @@ import type { Context } from "grammy";
 import {
   handleProjectLocationSelect,
   handleProjectBlockSelect,
+  handleProjects,
 } from "./commands/projects.js";
 import {
   handleSearchLocationSelect,
@@ -9,6 +10,7 @@ import {
   handleSearchPriceSelect,
   handleSearchResultPage,
   handleSearch,
+  showRoomsStep,
 } from "./commands/search.js";
 import {
   handleSubscribe,
@@ -62,6 +64,11 @@ async function routeCallback(ctx: Context, data: string) {
     return;
   }
 
+  if (data.match(/^proj:\d+:back$/)) {
+    await handleProjects(ctx);
+    return;
+  }
+
   if (data.match(/^proj:\d+:page:\d+$/)) {
     const parts = data.split(":");
     const locId = parseInt(parts[1], 10);
@@ -92,6 +99,11 @@ async function routeCallback(ctx: Context, data: string) {
   if (data.startsWith("search:result:")) {
     const page = parseInt(data.split(":")[2], 10);
     await handleSearchResultPage(ctx, page);
+    return;
+  }
+
+  if (data === "search:back:rooms") {
+    await showRoomsStep(ctx);
     return;
   }
 
@@ -137,6 +149,14 @@ async function routeCallback(ctx: Context, data: string) {
   if (data.startsWith("dyn:loc:")) {
     const locId = parseInt(data.split(":")[2], 10);
     await handleDynamicsLocationSelect(ctx, locId);
+    return;
+  }
+
+  if (data.match(/^dyn:\d+:page:\d+$/)) {
+    const parts = data.split(":");
+    const locId = parseInt(parts[1], 10);
+    const page = parseInt(parts[3], 10);
+    await handleDynamicsLocationSelect(ctx, locId, page);
     return;
   }
 

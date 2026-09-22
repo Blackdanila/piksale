@@ -59,6 +59,22 @@ export async function handleSearchLocationSelect(
   state.step = "rooms";
   filterState.set(chatId, state);
 
+  await showRoomsStep(ctx);
+}
+
+// Also the target of "← Назад" from the budget step.
+export async function showRoomsStep(ctx: Context) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  const state = filterState.get(chatId);
+  if (!state) {
+    await handleSearch(ctx);
+    return;
+  }
+  state.step = "rooms";
+  filterState.set(chatId, state);
+
   const kb = new InlineKeyboard()
     .text("Студия", "search:rooms:0")
     .text("1", "search:rooms:1")
@@ -83,7 +99,10 @@ export async function handleSearchRoomsSelect(
   const state = filterState.get(chatId);
   if (!state) return;
 
-  if (rooms !== "any") {
+  // Clear on "any" too — the user may be re-picking after "← Назад".
+  if (rooms === "any") {
+    delete state.filter.rooms;
+  } else {
     state.filter.rooms = parseInt(rooms, 10);
   }
   state.step = "price";
@@ -114,6 +133,8 @@ export async function handleSearchPriceSelect(
   const state = filterState.get(chatId);
   if (!state) return;
 
+  delete state.filter.priceMin;
+  delete state.filter.priceMax;
   if (price !== "any") {
     const [min, max] = price.split("-").map(Number);
     if (min) state.filter.priceMin = min;

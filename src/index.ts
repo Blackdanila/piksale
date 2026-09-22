@@ -1,5 +1,6 @@
 import "dotenv/config";
 import dns from "node:dns";
+import { createHash } from "node:crypto";
 
 // Patch dns.resolve4/resolve6 to check /etc/hosts first (for Docker extra_hosts)
 // Node.js fetch (undici) uses dns.resolve which bypasses /etc/hosts
@@ -29,7 +30,7 @@ const origResolve4 = dns.resolve4;
 };
 
 import { serve } from "@hono/node-server";
-import { createBot } from "./bot/index.js";
+import { createBot, setupBotMenu } from "./bot/index.js";
 import { createWebApp } from "./web/server.js";
 import { startScheduler } from "./scheduler.js";
 import { warmupCache } from "./db/queries.js";
@@ -61,9 +62,21 @@ const bot = createBot(token, {
 // Web app
 const app = createWebApp();
 
-// Bot webhook endpoint
+// Bot webhook endpoint.
+// The secret is derived from the token so no extra env var is needed; Telegram
+// echoes it back in a header, which keeps the public endpoint from accepting
+// forged updates.
+const WEBHOOK_SECRET = createHash("sha256")
+  .update(token)
+  .digest("hex")
+  .slice(0, 32);
+
 if (WEBHOOK_URL) {
   app.post("/bot/webhook", async (c) => {
+    if (c.req.header("x-telegram-bot-api-secret-token") !== WEBHOOK_SECRET) {
+      console.warn("Rejected webhook call with bad secret token");
+      return c.json({ ok: true });
+    }
     try {
       const body = await c.req.json();
       // Process update asynchronously — respond immediately to TG
@@ -78,6 +91,22 @@ if (WEBHOOK_URL) {
   });
 }
 
+// Register the webhook with Telegram on every boot. Without this the bot goes
+// silent whenever the registration is lost on Telegram's side, with no signal
+// here: the container stays up and the endpoint keeps answering 200.
+async function registerWebhook(url: string) {
+  const endpoint = `${url.replace(/\/$/, "")}/bot/webhook`;
+  await bot.api.setWebhook(endpoint, {
+    secret_token: WEBHOOK_SECRET,
+    allowed_updates: ["message", "callback_query"],
+  });
+  const info = await bot.api.getWebhookInfo();
+  console.log(
+    `Webhook registered: ${info.url} (pending=${info.pending_update_count}` +
+      `${info.last_error_message ? `, last_error="${info.last_error_message}"` : ""})`,
+  );
+}
+
 // Start scheduler
 startScheduler(bot);
 
@@ -90,11 +119,24 @@ warmupCache()
 serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`PIKsale server running on http://localhost:${PORT}`);
 
+  setupBotMenu(bot).catch((err) =>
+    console.error("Failed to publish bot commands:", err),
+  );
+
   if (WEBHOOK_URL) {
-    console.log(`Bot running via webhook: ${WEBHOOK_URL}/bot/webhook`);
+    registerWebhook(WEBHOOK_URL).catch((err) =>
+      console.error("Webhook registration FAILED — bot will not receive updates:", err),
+    );
   } else {
-    bot.start({
-      onStart: () => console.log("Bot started (long polling)"),
-    });
+    // Long polling only needs the outbound direction. A webhook left registered
+    // on Telegram's side makes getUpdates fail with 409, so clear it first.
+    bot.api
+      .deleteWebhook()
+      .catch((err) => console.error("deleteWebhook failed:", err))
+      .then(() =>
+        bot.start({
+          onStart: () => console.log("Bot started (long polling)"),
+        }),
+      );
   }
 });

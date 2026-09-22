@@ -1,13 +1,28 @@
 import { Keyboard, InlineKeyboard } from "grammy";
 
 export const mainMenu = new Keyboard()
-  .text("🏠 Мои ЖК")
   .text("🔍 Поиск")
+  .text("🏢 Каталог ЖК")
   .row()
   .text("📊 Динамика")
-  .text("⚙ Настройки")
+  .text("🔔 Мои подписки")
   .resized()
   .persistent();
+
+// Commands shown in Telegram's native "Menu" button
+export const botCommands = [
+  { command: "start", description: "🏠 Главное меню" },
+  { command: "search", description: "🔍 Поиск квартир по фильтрам" },
+  { command: "projects", description: "🏢 Каталог ЖК по городам" },
+  { command: "dynamics", description: "📊 Динамика цен" },
+  { command: "myprojects", description: "🔔 Мои подписки" },
+  { command: "help", description: "❓ Что умеет бот" },
+];
+
+// Single "back to the bot's main menu" button for dead-end screens
+export function backKeyboard(data: string, label = "← Назад") {
+  return new InlineKeyboard().text(label, data);
+}
 
 export function locationKeyboard(
   locations: Array<{ id: number; name: string }>,

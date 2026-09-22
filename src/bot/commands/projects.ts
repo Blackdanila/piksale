@@ -21,9 +21,16 @@ export async function handleProjects(ctx: Context) {
     return;
   }
 
-  await ctx.reply("📍 Выберите город:", {
-    reply_markup: locationKeyboard(locations, "proj"),
-  });
+  const text = "📍 Выберите город:";
+  const kb = locationKeyboard(locations, "proj");
+
+  // Reached either from the menu (new message) or from a "← Назад" button
+  // (edit the screen the user is already looking at).
+  if (ctx.callbackQuery) {
+    await ctx.editMessageText(text, { reply_markup: kb }).catch(() => {});
+  } else {
+    await ctx.reply(text, { reply_markup: kb });
+  }
 }
 
 export async function handleProjectLocationSelect(
@@ -102,6 +109,7 @@ export async function handleProjectBlockSelect(
     .join("\n");
 
   const kb = subscribeKeyboard(blockId, isSubscribed);
+  kb.row().text("← К списку ЖК", `proj:loc:${block.locationId}`);
 
   if (ctx.callbackQuery) {
     await ctx.editMessageText(text, { reply_markup: kb });
